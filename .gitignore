@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+# Tooling
+.vs/
+.vscode/
+.idea/
+*.DotSettings.user
+# Packages
+*.nupkg
+*.snupkg
+# Test output
+TestResults/
+coverage*.json
+coverage*.xml
+*.coverage
+# OS
+.DS_Store

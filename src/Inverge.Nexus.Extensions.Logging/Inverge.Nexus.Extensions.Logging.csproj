@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net9.0</TargetFrameworks>
+    <AssemblyName>Inverge.Nexus.Extensions.Logging</AssemblyName>
+    <RootNamespace>Inverge.Nexus.Extensions.Logging</RootNamespace>
+    <PackageId>Inverge.Nexus.Extensions.Logging</PackageId>
+    <Description>Microsoft.Extensions integration for the Inverge Nexus SDK: AddNexus() dependency-injection registration bound to IConfiguration and IHttpClientFactory, an ILogger provider that forwards log records to Nexus logs and errors, and a hosted service that flushes buffered telemetry on shutdown.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inverge.Nexus\Inverge.Nexus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+</Project>

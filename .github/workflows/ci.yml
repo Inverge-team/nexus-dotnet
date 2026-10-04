@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Every supported runtime is installed so the test project can run against
+      # each of them. Building alone would not catch a difference that only shows
+      # up at runtime between target frameworks.
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test (net8.0)
+        run: dotnet test tests/Inverge.Nexus.Tests --configuration Release --framework net8.0 --no-build --verbosity normal
+
+      - name: Test (net9.0)
+        run: dotnet test tests/Inverge.Nexus.Tests --configuration Release --framework net9.0 --no-build --verbosity normal
+
+      - name: Test (net10.0)
+        run: dotnet test tests/Inverge.Nexus.Tests --configuration Release --framework net10.0 --no-build --verbosity normal
+
+      - name: Pack
+        run: dotnet pack --configuration Release --no-build --output artifacts
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+          if-no-files-found: error

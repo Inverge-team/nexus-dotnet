@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <!-- The repo turns implicit usings off for shipping code, where every using
+         should be visible. A sample reads better with the defaults an app gets. -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Inverge.Nexus.Sample.Worker</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1812;CA2007;CA1031</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Inverge.Nexus\Inverge.Nexus.csproj" />
+    <ProjectReference Include="..\..\src\Inverge.Nexus.Realtime\Inverge.Nexus.Realtime.csproj" />
+  </ItemGroup>
+
+</Project>

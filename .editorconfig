@@ -1,0 +1,21 @@
+root = true
+
+[*.cs]
+# ─── Rules that conflict with multi-targeting ────────────────────────────────
+# These analyzers suggest APIs introduced in .NET 6/7. The packages also target
+# netstandard2.0, where those APIs do not exist, so a single source tree cannot
+# satisfy them. Disabled repo-wide rather than littered with #if blocks.
+dotnet_diagnostic.CA1510.severity = none   # ArgumentNullException.ThrowIfNull
+dotnet_diagnostic.CA1511.severity = none   # ArgumentException.ThrowIfNullOrEmpty
+dotnet_diagnostic.CA1512.severity = none   # ArgumentOutOfRangeException.ThrowIf*
+dotnet_diagnostic.CA1513.severity = none   # ObjectDisposedException.ThrowIf
+dotnet_diagnostic.CA1865.severity = none   # string.StartsWith(char)
+dotnet_diagnostic.CA1866.severity = none   # string.EndsWith(char)
+dotnet_diagnostic.CA1867.severity = none   # string.Contains(char)
+dotnet_diagnostic.CA2249.severity = none   # string.Contains(string, StringComparison)
+
+# ─── Naming ──────────────────────────────────────────────────────────────────
+# The API's own vocabulary wins over .NET casing conventions in a few places
+# (ETag, Ios), because matching the server's spelling is what makes the SDK
+# predictable to someone reading the API docs alongside it.
+dotnet_diagnostic.CA1707.severity = none   # underscores in member names

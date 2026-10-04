@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <!-- The repo turns implicit usings off for shipping code, where every using
+         should be visible. A sample reads better with the defaults an app gets. -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Inverge.Nexus.Sample.MinimalApi</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1812;CA2007</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Inverge.Nexus\Inverge.Nexus.csproj" />
+    <ProjectReference Include="..\..\src\Inverge.Nexus.AspNetCore\Inverge.Nexus.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Inverge.Nexus.Extensions.Logging\Inverge.Nexus.Extensions.Logging.csproj" />
+  </ItemGroup>
+
+</Project>

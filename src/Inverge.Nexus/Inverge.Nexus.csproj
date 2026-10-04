@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net9.0</TargetFrameworks>
+    <AssemblyName>Inverge.Nexus</AssemblyName>
+    <RootNamespace>Inverge.Nexus</RootNamespace>
+    <PackageId>Inverge.Nexus</PackageId>
+    <Description>The official .NET client for Inverge Nexus: product analytics, structured logging, error monitoring, sessions, feature flags, Remote Config, realtime rooms, deep-link attribution, surveys, push notifications, in-app messages, Live Activities, session replay and Voice (CPaaS). No third-party dependencies.</Description>
+  </PropertyGroup>
+
+  <!-- Trimming and native AOT: every request body is built as an explicit
+       JsonObject and every response is read field by field, so the SDK's own
+       paths are reflection-free. The one reflection-based path is serializing a
+       caller's POCO or anonymous type as event properties — documented, and
+       avoidable by passing a dictionary or JsonNode. -->
+  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="System.Threading.Channels" />
+  </ItemGroup>
+
+</Project>

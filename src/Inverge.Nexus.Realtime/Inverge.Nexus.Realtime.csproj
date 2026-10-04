@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net9.0</TargetFrameworks>
+    <AssemblyName>Inverge.Nexus.Realtime</AssemblyName>
+    <RootNamespace>Inverge.Nexus.Realtime</RootNamespace>
+    <PackageId>Inverge.Nexus.Realtime</PackageId>
+    <Description>Listen to Inverge Nexus realtime rooms from .NET. The core SDK emits over HTTP; this package adds a Socket.IO connection so a worker, bridge or test harness can receive room traffic, with automatic re-join after a reconnect.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inverge.Nexus\Inverge.Nexus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SocketIOClient" />
+  </ItemGroup>
+
+</Project>

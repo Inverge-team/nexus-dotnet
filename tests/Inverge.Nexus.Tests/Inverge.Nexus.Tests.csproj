@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Locally the suite runs on whichever runtime a contributor has, which keeps
+         `dotnet test` working without installing three of them. CI sets CI=true and
+         runs the whole matrix, so a difference that only shows up at runtime on an
+         older target is still caught before release.
+
+         The netstandard2.0 build is verified by compilation only: no .NET Core
+         runtime resolves that asset, and exercising it needs a .NET Framework host. -->
+    <TargetFramework Condition="'$(CI)' != 'true'">net10.0</TargetFramework>
+    <TargetFrameworks Condition="'$(CI)' == 'true'">net8.0;net9.0;net10.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Test code says things production code should not: unreachable throws in
+         fakes, deliberately unawaited tasks. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1001;CA1707;CA1711;CA1716;CA1720;CA1812;CA1816;CA1848;CA1849;CA1861;CA1873;CA2007;CA2201;xUnit1051</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Inverge.Nexus\Inverge.Nexus.csproj" />
+    <ProjectReference Include="..\..\src\Inverge.Nexus.Extensions.Logging\Inverge.Nexus.Extensions.Logging.csproj" />
+    <ProjectReference Include="..\..\src\Inverge.Nexus.AspNetCore\Inverge.Nexus.AspNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

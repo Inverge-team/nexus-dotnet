@@ -4,9 +4,16 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
-## [1.0.0] — 2026-10-04
+## [1.0.0-rc.1] — 2026-10-04
 
-First release. Full coverage of the Nexus partner API from .NET.
+First published version. Full coverage of the Nexus partner API from .NET.
+
+Shipped as a release candidate deliberately: the 134 tests all run against a fake
+transport or a loopback HTTP server, so no call in this package has yet been made
+against the live Nexus API. The wire contract was written from the backend's
+`partner*.controller.ts` files rather than transcribed from another SDK, but that is
+a careful reading, not a verification. 1.0.0 follows once an rc has been exercised
+against a real environment.
 
 ### Added
 

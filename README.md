@@ -48,16 +48,23 @@ to a single user journey.
 ## 1. Install
 
 ```bash
-dotnet add package Inverge.Nexus
+dotnet add package Inverge.Nexus --prerelease
 ```
 
 Optional, depending on what you are building:
 
 ```bash
-dotnet add package Inverge.Nexus.Extensions.Logging   # DI, ILogger bridge, flush on shutdown
-dotnet add package Inverge.Nexus.AspNetCore           # request middleware
-dotnet add package Inverge.Nexus.Realtime             # listen to realtime rooms
+dotnet add package Inverge.Nexus.Extensions.Logging --prerelease   # DI, ILogger bridge, flush on shutdown
+dotnet add package Inverge.Nexus.AspNetCore --prerelease           # request middleware
+dotnet add package Inverge.Nexus.Realtime --prerelease             # listen to realtime rooms
 ```
+
+> The current release is **1.0.0-rc.1**, so `--prerelease` is required. It is a
+> release candidate for one specific reason: the SDK's own test suite runs against a
+> fake transport and a loopback server, never against the live API. The wire contract
+> was written from the backend's own controllers, but the rc exists so it can be
+> confirmed against a real environment before 1.0.0 is cut. Drop `--prerelease` once
+> 1.0.0 ships.
 
 An API key belongs to **one environment**, and everything a client writes lands in
 that environment. Use a separate key per environment.

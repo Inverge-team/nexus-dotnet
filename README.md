@@ -114,7 +114,7 @@ app.MapPost("/orders", (INexusClient nexus, Order order) =>
 app.Run();
 ```
 
-Working samples live in [`samples/`](samples).
+Working samples live in [`samples/`](https://github.com/Inverge-team/nexus-dotnet/tree/dev/samples).
 
 ---
 

@@ -31,12 +31,23 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>See the CHANGELOG: https://github.com/Inverge-team/nexus-dotnet/blob/dev/CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>nexus;inverge;analytics;feature-flags;remote-config;realtime;logging;error-monitoring;push-notifications;voice;cpaas;sdk</PackageTags>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' != 'false'">
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
+
+  <!-- Normalises embedded source paths so a package built here and a package built
+       on a CI runner are byte-comparable, and so Source Link resolves to the commit
+       rather than to a path on one machine. Set automatically on CI; pass
+       -p:ContinuousIntegrationBuild=true when packing a release by hand. -->
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
 
   <!-- netstandard2.0 predates several language-support attributes the compiler
        needs for records, `init` and nullable analysis. Polyfills.cs supplies

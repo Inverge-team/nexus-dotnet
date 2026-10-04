@@ -1,8 +1,10 @@
 name: CI
 
+# dev and pull requests only. Pushes to main are handled by release.yml, which
+# runs the same build and the same test matrix before it publishes anything.
 on:
   push:
-    branches: [dev, main]
+    branches: [dev]
   pull_request:
     branches: [dev, main]
 

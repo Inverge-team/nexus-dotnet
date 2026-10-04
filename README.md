@@ -941,6 +941,11 @@ request `retryable` only when repeating it is genuinely harmless.
 
 ---
 
+## Releasing
+
+Publishing is automated: merging `dev` into `main` publishes the version declared in
+`Directory.Build.props`. See [RELEASING.md](https://github.com/Inverge-team/nexus-dotnet/blob/dev/RELEASING.md).
+
 ## Links
 
 - Console — <https://nexus.inverge.net>

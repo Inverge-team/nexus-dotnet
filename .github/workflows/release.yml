@@ -1,0 +1,210 @@
+name: Release
+
+# Merging dev into main publishes whatever version Directory.Build.props declares.
+# The release ritual is therefore: bump the version on dev, merge to main.
+#
+# Re-running on a commit to main that did not change the version is harmless — the
+# workflow notices the version is already on nuget.org and skips the push rather
+# than failing, because a version on nuget.org can never be replaced.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Two overlapping publishes of the same version would race on the tag and on
+# nuget.org's validation queue.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write        # create the tag and the GitHub Release
+
+jobs:
+  release:
+    name: Publish to nuget.org
+    runs-on: ubuntu-latest
+
+    # Referencing an environment gives you somewhere to add required reviewers if
+    # you later want a human to approve each publish. It is created on first run
+    # with no protection rules, so it changes nothing until you configure it.
+    environment: release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # tags, and a real commit for Source Link
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Fail early if the publish key is missing
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "::error::The NUGET_API_KEY repository secret is not set."
+            echo "Add it under Settings → Secrets and variables → Actions."
+            echo "It needs the 'Push new packages and package versions' scope and the glob Inverge.*"
+            exit 1
+          fi
+
+      - name: Read the version
+        id: version
+        run: |
+          VERSION=$(dotnet msbuild src/Inverge.Nexus/Inverge.Nexus.csproj \
+            -getProperty:PackageVersion -p:Configuration=Release -nologo | tr -d '[:space:]')
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not read PackageVersion from Directory.Build.props."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          case "$VERSION" in
+            *-*) echo "prerelease=true"  >> "$GITHUB_OUTPUT" ;;
+            *)   echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+          echo "Releasing $VERSION"
+
+      - name: Has this version already been published?
+        id: published
+        run: |
+          VERSION='${{ steps.version.outputs.version }}'
+          # The flat container lists every published version of a package id.
+          LOWER=$(echo "$VERSION" | tr '[:upper:]' '[:lower:]')
+          BODY=$(curl -fsSL "https://api.nuget.org/v3-flatcontainer/inverge.nexus/index.json" || echo '{"versions":[]}')
+          if echo "$BODY" | grep -q "\"$LOWER\""; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Inverge.Nexus $VERSION is already on nuget.org — skipping the publish."
+            echo "A published version can never be replaced. Bump the version on dev to release again."
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      # Nothing untested gets published. CI=true is set by Actions, which makes the
+      # test project multi-target so each supported runtime is exercised.
+      - name: Test (net8.0)
+        run: dotnet test tests/Inverge.Nexus.Tests -c Release --framework net8.0 --no-build --verbosity normal
+
+      - name: Test (net9.0)
+        run: dotnet test tests/Inverge.Nexus.Tests -c Release --framework net9.0 --no-build --verbosity normal
+
+      - name: Test (net10.0)
+        run: dotnet test tests/Inverge.Nexus.Tests -c Release --framework net10.0 --no-build --verbosity normal
+
+      - name: Pack
+        run: dotnet pack --configuration Release --no-build --output artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkg-${{ steps.version.outputs.version }}
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          if-no-files-found: error
+
+      # Inverge.Nexus goes first and alone: the other three depend on it, and a
+      # dependent published before its dependency is indexed is briefly
+      # uninstallable for anyone who happens to try.
+      - name: Push Inverge.Nexus
+        if: steps.published.outputs.already == 'false'
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          dotnet nuget push "artifacts/Inverge.Nexus.$VERSION.nupkg" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "$NUGET_API_KEY" --skip-duplicate
+
+      - name: Wait for indexing
+        if: steps.published.outputs.already == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          LOWER=$(echo "$VERSION" | tr '[:upper:]' '[:lower:]')
+          for i in $(seq 1 20); do
+            BODY=$(curl -fsSL "https://api.nuget.org/v3-flatcontainer/inverge.nexus/index.json" || echo '')
+            if echo "$BODY" | grep -q "\"$LOWER\""; then
+              echo "Indexed after ~$((i * 15))s."
+              exit 0
+            fi
+            sleep 15
+          done
+          # Not fatal: nuget.org accepts the dependents regardless, and a slow
+          # validation queue is not a release failure.
+          echo "::warning::Still not indexed after 5 minutes; publishing the dependents anyway."
+
+      - name: Push the integration packages
+        if: steps.published.outputs.already == 'false'
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          for p in Extensions.Logging AspNetCore Realtime; do
+            dotnet nuget push "artifacts/Inverge.Nexus.$p.$VERSION.nupkg" \
+              --source https://api.nuget.org/v3/index.json \
+              --api-key "$NUGET_API_KEY" --skip-duplicate
+          done
+
+      - name: Push symbol packages
+        if: steps.published.outputs.already == 'false'
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          # NuGet usually pushes a .snupkg alongside its .nupkg automatically; this
+          # is explicit in case it did not, and --skip-duplicate makes it a no-op.
+          for f in artifacts/*.snupkg; do
+            dotnet nuget push "$f" \
+              --source https://api.nuget.org/v3/index.json \
+              --api-key "$NUGET_API_KEY" --skip-duplicate
+          done
+
+      - name: Tag and create the GitHub Release
+        if: steps.published.outputs.already == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          TAG="v$VERSION"
+          if git rev-parse "$TAG" >/dev/null 2>&1 || gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::$TAG already exists — leaving it alone."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Nexus .NET SDK $VERSION"
+          git push origin "$TAG"
+
+          # Built with printf rather than an inline multi-line string: a markdown
+          # table inside a YAML block scalar has to stay indented, and indented
+          # markdown renders as a code block.
+          {
+            printf 'Published to nuget.org.\n\n'
+            printf '| Package | Install |\n'
+            printf '|---|---|\n'
+            for p in "Inverge.Nexus" "Inverge.Nexus.Extensions.Logging" \
+                     "Inverge.Nexus.AspNetCore" "Inverge.Nexus.Realtime"; do
+              printf '| `%s` | `dotnet add package %s --version %s` |\n' "$p" "$p" "$VERSION"
+            done
+            printf '\nSee [CHANGELOG.md](https://github.com/Inverge-team/nexus-dotnet/blob/main/CHANGELOG.md).\n'
+          } > release-notes.md
+
+          FLAG=""
+          if [ "$PRERELEASE" = "true" ]; then FLAG="--prerelease"; fi
+
+          gh release create "$TAG" $FLAG \
+            --title "Nexus .NET SDK $VERSION" \
+            --notes-file release-notes.md \
+            artifacts/*.nupkg

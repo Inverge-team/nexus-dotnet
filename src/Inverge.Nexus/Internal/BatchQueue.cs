@@ -42,6 +42,13 @@ internal sealed class BatchQueue : IDisposable
     private long _dropped;
     private volatile bool _stopping;
 
+    // Batches drained from the buffer but not yet delivered. Guarded by _gate, and
+    // incremented inside the same lock that empties the buffer: without that, a
+    // flush could observe an empty buffer in the instant after the worker took a
+    // batch and before it started sending, and report success for data still in
+    // memory.
+    private int _outstanding;
+
     public BatchQueue(
         string name,
         Func<IReadOnlyList<JsonObject>, JsonObject, CancellationToken, Task> sender,
@@ -113,18 +120,43 @@ internal sealed class BatchQueue : IDisposable
         }
     }
 
-    /// <summary>Sends everything buffered right now, on the calling flow.</summary>
+    /// <summary>
+    /// Sends everything buffered right now, on the calling flow, and waits for any
+    /// delivery already in progress.
+    /// </summary>
+    /// <remarks>
+    /// Waiting for in-flight batches is the part that matters. The background worker
+    /// drains the whole buffer at once and then ships it in chunks, so a flush that
+    /// only checked whether the buffer was empty would return while hundreds of items
+    /// were still being written — and a caller that flushed before exiting would lose
+    /// exactly the telemetry it asked to be sent.
+    /// </remarks>
     public async Task FlushAsync(CancellationToken cancellationToken = default)
     {
         while (true)
         {
             var batch = Drain();
-            if (batch.Count == 0)
-            {
-                return;
-            }
 
-            await SendGroupedAsync(batch, cancellationToken).ConfigureAwait(false);
+            if (batch.Count > 0)
+            {
+                try
+                {
+                    await SendGroupedAsync(batch, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    CompleteBatch();
+                }
+            }
+            else
+            {
+                if (IsIdle)
+                {
+                    return;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(5), cancellationToken).ConfigureAwait(false);
+            }
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -243,21 +275,53 @@ internal sealed class BatchQueue : IDisposable
             // does not spin once per item after a burst.
             DrainSignal();
 
-            var batch = Drain();
-            if (batch.Count > 0)
-            {
-                await SendGroupedAsync(batch, CancellationToken.None).ConfigureAwait(false);
-            }
+            await SendDrainedAsync().ConfigureAwait(false);
 
             if (_stopping)
             {
-                var remaining = Drain();
-                if (remaining.Count > 0)
-                {
-                    await SendGroupedAsync(remaining, CancellationToken.None).ConfigureAwait(false);
-                }
-
+                await SendDrainedAsync().ConfigureAwait(false);
                 return;
+            }
+        }
+    }
+
+    private async Task SendDrainedAsync()
+    {
+        var batch = Drain();
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await SendGroupedAsync(batch, CancellationToken.None).ConfigureAwait(false);
+        }
+        finally
+        {
+            CompleteBatch();
+        }
+    }
+
+    /// <summary>Whether the buffer is empty and nothing is being delivered.</summary>
+    private bool IsIdle
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _items.Count == 0 && _outstanding == 0;
+            }
+        }
+    }
+
+    private void CompleteBatch()
+    {
+        lock (_gate)
+        {
+            if (_outstanding > 0)
+            {
+                _outstanding--;
             }
         }
     }
@@ -281,6 +345,7 @@ internal sealed class BatchQueue : IDisposable
 
             var batch = new List<Entry>(_items);
             _items.Clear();
+            _outstanding++;
             return batch;
         }
     }

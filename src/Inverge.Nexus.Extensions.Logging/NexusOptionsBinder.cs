@@ -46,6 +46,17 @@ internal static class NexusOptionsBinder
         Boolean(section, "Batch", value => options.Batch = value);
         Boolean(section, "Silent", value => options.Silent = value);
         Boolean(section, "Debug", value => options.Debug = value);
+        Boolean(section, "Enabled", value => options.Enabled = value);
+
+        // "Nexus": { "Services": { "LiveActivities": false } } — only switches off;
+        // every service is on by default.
+        foreach (var service in section.GetSection("Services").GetChildren())
+        {
+            if (service.Value is not null)
+            {
+                options.Services[service.Key] = NexusServices.IsOn(service.Value);
+            }
+        }
 
         foreach (var header in section.GetSection("DefaultHeaders").GetChildren())
         {

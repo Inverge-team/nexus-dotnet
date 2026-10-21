@@ -199,6 +199,46 @@ putting a live key in a committed file.
 
 ---
 
+### Switching services off
+
+**Every service is on by default.** Turn one off without removing the code that
+uses it — e.g. stop Live Activities with one environment variable. A
+switched-off service makes no request and never throws (even without `Silent`):
+calls return their neutral result (flags → your fallback, Remote Config → your
+default, results → zero counts), events and logs aren't even buffered, and the
+realtime socket doesn't connect.
+
+```bash
+NEXUS_LIVE_ACTIVITIES_ENABLED=false   # just Live Activities
+NEXUS_ENABLED=false                   # everything (e.g. tests / CI)
+```
+
+| Variable | `NexusServices.` | Switches off |
+|---|---|---|
+| `NEXUS_REALTIME_ENABLED` | `Realtime` | rooms / emits / the realtime socket |
+| `NEXUS_EVENTS_ENABLED` | `Events` | events |
+| `NEXUS_ERRORS_ENABLED` | `Errors` | error capture |
+| `NEXUS_LOGS_ENABLED` | `Logs` | logs |
+| `NEXUS_SESSIONS_ENABLED` | `Sessions` | sessions |
+| `NEXUS_FLAGS_ENABLED` | `Flags` | feature flags (→ your fallback) |
+| `NEXUS_REMOTE_CONFIG_ENABLED` | `RemoteConfig` | Remote Config (→ your default) |
+| `NEXUS_LINKS_ENABLED` | `Links` | deep links |
+| `NEXUS_SURVEYS_ENABLED` | `Surveys` | surveys |
+| `NEXUS_PUSH_ENABLED` | `Push` | push notifications |
+| `NEXUS_IN_APP_ENABLED` | `InApp` | in-app messages |
+| `NEXUS_LIVE_ACTIVITIES_ENABLED` | `LiveActivities` | Live Activities |
+| `NEXUS_REPLAY_ENABLED` | `Replay` | session replay |
+| `NEXUS_VOICE_ENABLED` | `Voice` | voice |
+
+`false`, `0`, `off`, `no` mean off. In code: `options.Services[NexusServices.Push] = false`
+or `options.Enabled = false`; in `appsettings.json`:
+`"Nexus": { "Services": { "LiveActivities": false } }` (the other SDKs' names such
+as `liveActivities` work too; unknown names fail validation). Off wins: a service
+is on only if neither the code nor the environment turns it off.
+`client.IsServiceEnabled(NexusServices.Push)` tells you whether one is on.
+
+---
+
 ## 5. Identity and ambient context
 
 Every event, log line and error carries identity, a session and device fields.
@@ -573,6 +613,38 @@ await nexus.InApp.DismissAsync("msg_1");
 
 ## 17. Live Activities
 
+### Templates (recommended)
+
+Design the activity once in the Nexus console (**Live Activities → Templates**:
+layout, colours, steps, icons, translations). The Nexus mobile SDKs render it on
+iOS and Android, each device in its own language — your server sends only data:
+
+```csharp
+await nexus.LiveActivities.Template("order_tracking", "order_42")   // template key + your id
+    .Step("pending")                                               // a step id (or label)
+    .EtaAt(DateTimeOffset.UtcNow.AddMinutes(25))                   // live countdown on the device
+    .Value("driver", "Ahmed").Value("quantity", "500 L · Diesel")  // {{placeholders}}
+    .ToUser("user_1")
+    .StartAsync();
+
+// Updates are partial — only what changed; the server merges it.
+await nexus.LiveActivities.Activity("order_42").Step("on_the_way").Progress(0.4).UpdateAsync();
+await nexus.LiveActivities.Activity("order_42").Step("completed").EndAsync();   // final state
+await nexus.LiveActivities.Activity("order_42").Canceled().EndAsync();          // or canceled
+```
+
+Data setters: `Step`, `Progress` (0–1 toward the next step), `EtaAt` (a
+`DateTimeOffset` or unix seconds / ms) or `Eta("8 min")` for fixed text,
+`Value(key, value)` / `Values(object)`, `Canceled()`, `Done()`, `Data(object)`,
+`Title/Subtitle/Body` (override the template's texts). Start only: `Lang("ar")`
+forces one language for everyone (default: each device's app language),
+`Alert(title, body)`. Plain methods: `StartTemplateAsync(template, id, data, …)`,
+`UpdateDataAsync(id, data)`, `EndWithDataAsync(id, data)`; a null inside `data`
+clears a field. `template` may also be an inline design object. The start result
+has `IosTargets` and, when iOS got nothing, an `IosWarning` saying why.
+
+### Plain (your own iOS widget)
+
 ```csharp
 await nexus.LiveActivities.Activity("DeliveryAttributes", "order_42")
     .Title("Order #42").Status("Preparing").Progress(20)
@@ -589,7 +661,8 @@ start — on iOS they are ActivityKit's static attributes and a later update can
 change them, so anything that will change belongs in the content state.
 
 iOS needs the APNs key configured in the console (Live Activities cannot go through
-FCM) and a Widget Extension in the app. Android needs no extra setup.
+FCM) and the one-time Widget Extension in the app (see the Flutter SDK README).
+Android needs no extra setup.
 
 ---
 

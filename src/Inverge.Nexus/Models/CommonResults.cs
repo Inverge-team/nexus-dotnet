@@ -182,6 +182,8 @@ public sealed class LiveActivityResult : NexusResult
     {
         Ios = raw.Int("ios");
         Android = raw.Int("android");
+        IosTargets = raw.Int("iosTargets");
+        IosWarning = raw.Str("iosWarning");
     }
 
     /// <summary>iOS devices reached.</summary>
@@ -192,6 +194,15 @@ public sealed class LiveActivityResult : NexusResult
 
     /// <summary>Devices reached in total.</summary>
     public int Total => Ios + Android;
+
+    /// <summary>Start only: iOS devices registered for the activity type.</summary>
+    public int IosTargets { get; }
+
+    /// <summary>
+    /// Start only: why iOS got fewer deliveries than targets — no registered
+    /// devices, APNs not configured, or Apple's rejection. Null when all is well.
+    /// </summary>
+    public string? IosWarning { get; }
 
     internal static LiveActivityResult From(JsonNode? raw) => new LiveActivityResult(raw);
 }

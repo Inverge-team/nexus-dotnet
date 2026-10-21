@@ -10,6 +10,12 @@ namespace Inverge.Nexus.Resources;
 
 /// <summary>Live Activities — a live, updating view of something in progress.</summary>
 /// <remarks>
+/// <para>
+/// Templated (recommended): design the activity once in the Nexus console; the
+/// mobile SDKs render it on iOS and Android in each device's language, and the
+/// server sends only data — <see cref="Template"/>, <see cref="StartTemplateAsync"/>,
+/// <see cref="UpdateDataAsync"/>, <see cref="EndWithDataAsync"/>.
+/// </para>
 /// iOS renders these on the Lock Screen and in the Dynamic Island; Android as an
 /// ongoing live notification. The server-side shape is always the same: start when
 /// the order or ride or match begins, update as it changes, end when it is done.
@@ -33,6 +39,125 @@ public sealed class LiveActivitiesResource : NexusResource
         return activityId is null
             ? new LiveActivityBuilder(this, activityTypeOrId, null)
             : new LiveActivityBuilder(this, activityId, activityTypeOrId);
+    }
+
+    /// <summary>
+    /// Starts a fluent templated activity. <paramref name="template"/> is a template
+    /// key from the Nexus console (e.g. <c>"order_tracking"</c>) or an inline design object.
+    /// </summary>
+    public LiveActivityBuilder Template(object template, string activityId)
+    {
+        if (template is null)
+        {
+            throw new ArgumentNullException(nameof(template));
+        }
+
+        if (template is string key)
+        {
+            Guard.NotBlank(key, nameof(template));
+        }
+
+        Guard.NotBlank(activityId, nameof(activityId));
+        return new LiveActivityBuilder(this, activityId, null, template);
+    }
+
+    /// <summary>Starts a templated activity.</summary>
+    /// <param name="template">A console template key (string) or an inline design object.</param>
+    /// <param name="activityId">Your id for this instance. Update and end address it.</param>
+    /// <param name="data">
+    /// The template's data: <c>step</c>, <c>state</c>, <c>progress</c> (0–1),
+    /// <c>etaAt</c> (unix seconds) and <c>values</c> for its placeholders.
+    /// </param>
+    /// <param name="distinctIds">Who should see it. Omit for a shared activity.</param>
+    /// <param name="lang">Force one language for everyone. Default: each device's app language.</param>
+    /// <param name="alertTitle">The iOS alert shown with the start. Default: the template's texts.</param>
+    /// <param name="alertBody">The alert's body.</param>
+    /// <param name="attributes">Extra fixed attributes.</param>
+    /// <param name="staleDate">When the activity should be shown as stale.</param>
+    /// <param name="priority">APNs priority: 5 routine, 10 immediate.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    public async Task<LiveActivityResult> StartTemplateAsync(
+        object template,
+        string activityId,
+        object? data = null,
+        IEnumerable<string>? distinctIds = null,
+        string? lang = null,
+        string? alertTitle = null,
+        string? alertBody = null,
+        object? attributes = null,
+        DateTimeOffset? staleDate = null,
+        int? priority = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (template is null)
+        {
+            throw new ArgumentNullException(nameof(template));
+        }
+
+        Guard.NotBlank(activityId, nameof(activityId));
+
+        var response = await SendAsync(
+            Payloads.LiveActivityStartTemplate(
+                template,
+                activityId,
+                data,
+                distinctIds,
+                lang,
+                alertTitle,
+                alertBody,
+                attributes,
+                staleDate.HasValue ? JsonHelpers.Iso8601(staleDate.Value) : null,
+                priority),
+            cancellationToken).ConfigureAwait(false);
+
+        return LiveActivityResult.From(response);
+    }
+
+    /// <summary>
+    /// Updates a templated activity with partial data — only what changed. The
+    /// server merges it into the activity's current data; a null inside clears a field.
+    /// </summary>
+    public async Task<LiveActivityResult> UpdateDataAsync(
+        string activityId,
+        object data,
+        DateTimeOffset? staleDate = null,
+        int? priority = null,
+        CancellationToken cancellationToken = default)
+    {
+        Guard.NotBlank(activityId, nameof(activityId));
+
+        var response = await SendAsync(
+            Payloads.LiveActivityUpdateData(
+                activityId,
+                data,
+                staleDate.HasValue ? JsonHelpers.Iso8601(staleDate.Value) : null,
+                priority),
+            cancellationToken).ConfigureAwait(false);
+
+        return LiveActivityResult.From(response);
+    }
+
+    /// <summary>
+    /// Ends a templated activity with its final data shown before dismissal —
+    /// e.g. <c>new { step = "completed" }</c> or <c>new { state = "canceled" }</c>.
+    /// </summary>
+    public async Task<LiveActivityResult> EndWithDataAsync(
+        string activityId,
+        object? data = null,
+        DateTimeOffset? dismissalDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        Guard.NotBlank(activityId, nameof(activityId));
+
+        var response = await SendAsync(
+            Payloads.LiveActivityEnd(
+                activityId,
+                null,
+                dismissalDate.HasValue ? JsonHelpers.Iso8601(dismissalDate.Value) : null,
+                data),
+            cancellationToken).ConfigureAwait(false);
+
+        return LiveActivityResult.From(response);
     }
 
     /// <summary>Starts an activity.</summary>

@@ -133,6 +133,61 @@ public sealed class NexusOptions
     /// </summary>
     public TimeSpan RemoteConfigCacheTtl { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// <c>false</c> switches every Nexus service off without removing any code.
+    /// Defaults to <c>true</c>: every service is on. Also <c>NEXUS_ENABLED=false</c>.
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Per-service switches, keyed by <see cref="NexusServices"/> names, e.g.
+    /// <c>Services[NexusServices.LiveActivities] = false</c>. Empty by default —
+    /// <b>every service is on</b> unless switched off here or by its
+    /// <c>NEXUS_&lt;SERVICE&gt;_ENABLED</c> environment variable (off wins).
+    /// </summary>
+    public IDictionary<string, bool> Services { get; } = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+    // Switched off by the environment — kept apart from Services so code applied
+    // after ApplyEnvironment() can't switch them back on (off wins).
+    private readonly HashSet<string> _environmentOff = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    private bool _environmentAllOff;
+
+    /// <summary>
+    /// Whether a service is on: not switched off by <see cref="Enabled"/>,
+    /// <see cref="Services"/> or the environment. Unknown names count as on.
+    /// </summary>
+    public bool IsServiceEnabled(string service) => ServiceOffReason(service) is null;
+
+    /// <summary>Why a service is off (for diagnostics), or null when it is on.</summary>
+    public string? ServiceOffReason(string service)
+    {
+        var name = NexusServices.Normalize(service);
+        if (name is null)
+        {
+            return null;
+        }
+
+        if (!Enabled)
+        {
+            return "NexusOptions.Enabled=false";
+        }
+
+        if (_environmentAllOff)
+        {
+            return NexusServices.AllEnvironmentVariable + "=false";
+        }
+
+        foreach (var entry in Services)
+        {
+            if (!entry.Value && NexusServices.Normalize(entry.Key) == name)
+            {
+                return "NexusOptions.Services[\"" + name + "\"]=false";
+            }
+        }
+
+        return _environmentOff.Contains(name) ? NexusServices.EnvironmentVariables[name] + "=false" : null;
+    }
+
     /// <summary>The API origin without a trailing slash.</summary>
     public string HttpBase => _baseUrl;
 
@@ -204,6 +259,20 @@ public sealed class NexusOptions
         AssignBool(read("NEXUS_BATCH"), value => Batch = value);
         AssignBool(read("NEXUS_SILENT"), value => Silent = value);
         AssignBool(read("NEXUS_DEBUG"), value => Debug = value);
+
+        // Service switches — only ever turn things OFF (every service defaults to on).
+        if (!NexusServices.IsOn(read(NexusServices.AllEnvironmentVariable)))
+        {
+            _environmentAllOff = true;
+        }
+
+        foreach (var entry in NexusServices.EnvironmentVariables)
+        {
+            if (!NexusServices.IsOn(read(entry.Value)))
+            {
+                _environmentOff.Add(entry.Key);
+            }
+        }
     }
 
     /// <summary>Throws when the options cannot produce a working client.</summary>
@@ -237,6 +306,17 @@ public sealed class NexusOptions
         {
             throw new NexusConfigurationException("NexusOptions.MaxBatch must be at least 1.");
         }
+
+        foreach (var key in Services.Keys)
+        {
+            // A typo must not silently leave a service on.
+            if (NexusServices.Normalize(key) is null)
+            {
+                throw new NexusConfigurationException(
+                    "Unknown Nexus service '" + key + "' in NexusOptions.Services. Known: "
+                    + string.Join(", ", NexusServices.EnvironmentVariables.Keys) + ".");
+            }
+        }
     }
 
     /// <summary>The absolute URL for a request path.</summary>
@@ -267,7 +347,16 @@ public sealed class NexusOptions
             UserAgent = UserAgent,
             RemoteConfigCacheTtl = RemoteConfigCacheTtl,
             DiagnosticSink = DiagnosticSink,
+            Enabled = Enabled,
+            _environmentAllOff = _environmentAllOff,
         };
+
+        foreach (var service in Services)
+        {
+            copy.Services[service.Key] = service.Value;
+        }
+
+        copy._environmentOff.UnionWith(_environmentOff);
 
         foreach (var header in DefaultHeaders)
         {

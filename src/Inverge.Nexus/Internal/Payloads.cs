@@ -424,13 +424,60 @@ internal static class Payloads
                 .Set("priority", priority)
                 .Build());
 
-    public static NexusRequest LiveActivityEnd(string activityId, object? contentState, string? dismissalDate)
+    public static NexusRequest LiveActivityEnd(
+        string activityId, object? contentState, string? dismissalDate, object? data = null)
         => new NexusRequest(
             "POST",
             "/partner/live-activities/" + Seg(activityId) + "/end",
             JsonBody.Create()
+                .SetAny("data", data)
                 .SetAny("contentState", contentState)
                 .Set("dismissalDate", dismissalDate)
+                .Build());
+
+    /// <summary>
+    /// A templated start: <paramref name="template"/> is a console template key
+    /// (a string) or an inline design object. No <c>activityType</c> — the server
+    /// targets the SDK widget's type.
+    /// </summary>
+    public static NexusRequest LiveActivityStartTemplate(
+        object template,
+        string activityId,
+        object? data,
+        IEnumerable<string>? distinctIds,
+        string? lang,
+        string? alertTitle,
+        string? alertBody,
+        object? attributes,
+        string? staleDate,
+        int? priority)
+        => new NexusRequest(
+            "POST",
+            "/partner/live-activities/start",
+            JsonBody.Create()
+                .SetAny("template", template)
+                .Set("activityId", activityId)
+                .SetObjectAlways("data", data)
+                .SetStrings("distinctIds", distinctIds)
+                .Set("lang", lang)
+                .SetNode("alert", alertTitle is null
+                    ? null
+                    : JsonBody.Create().Set("title", alertTitle).Set("body", alertBody).Build())
+                .SetAny("attributes", attributes)
+                .Set("staleDate", staleDate)
+                .Set("priority", priority)
+                .Build());
+
+    /// <summary>A templated update: partial <c>data</c> the server merges (a null inside clears a field).</summary>
+    public static NexusRequest LiveActivityUpdateData(
+        string activityId, object? data, string? staleDate, int? priority)
+        => new NexusRequest(
+            "POST",
+            "/partner/live-activities/" + Seg(activityId) + "/update",
+            JsonBody.Create()
+                .SetObjectAlways("data", data)
+                .Set("staleDate", staleDate)
+                .Set("priority", priority)
                 .Build());
 
     public static NexusRequest LiveActivityPushToken(

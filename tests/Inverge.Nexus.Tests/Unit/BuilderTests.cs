@@ -137,6 +137,113 @@ public class BuilderTests
     }
 
     [Fact]
+    public async Task A_templated_activity_starts_by_key_and_sends_only_data()
+    {
+        var (client, transport) = TestClient.Create(
+            _ => RecordingTransport.Json(200, """{"ios":1,"android":2,"iosTargets":1,"iosWarning":"x"}"""));
+        await using var _ = client;
+
+        var started = await client.LiveActivities.Template("order_tracking", "order_42")
+            .Step("pending")
+            .EtaAt(new DateTimeOffset(2026, 10, 21, 12, 0, 0, TimeSpan.Zero))
+            .Value("driver", "Ahmed")
+            .Values(new Dictionary<string, object> { ["liters"] = 500 })
+            .ToUser("user_1")
+            .Lang("ckb")
+            .Alert("Order received", "500 L")
+            .StartAsync();
+
+        Assert.Equal(1, started.IosTargets);
+        Assert.Equal("x", started.IosWarning);
+        var body = transport.Last.Object;
+        Assert.Equal("/partner/live-activities/start", transport.Last.Path);
+        Assert.Equal("order_tracking", body["template"]!.ToString());
+        Assert.False(body.ContainsKey("activityType")); // the server targets the SDK widget's type
+        Assert.False(body.ContainsKey("contentState"));
+        Assert.Equal("pending", body["data"]!["step"]!.ToString());
+        Assert.Equal(1792584000L, body["data"]!["etaAt"]!.GetValue<long>());
+        Assert.Equal("Ahmed", body["data"]!["values"]!["driver"]!.ToString());
+        Assert.Equal(500, body["data"]!["values"]!["liters"]!.GetValue<int>());
+        Assert.Equal("ckb", body["lang"]!.ToString());
+        Assert.Equal("Order received", body["alert"]!["title"]!.ToString());
+        Assert.Equal("500 L", body["alert"]!["body"]!.ToString());
+    }
+
+    [Fact]
+    public async Task Template_updates_are_partial_data_and_ends_carry_the_final_state()
+    {
+        var (client, transport) = TestClient.Create(_ => RecordingTransport.Json(200, """{"ios":1,"android":0}"""));
+        await using var _ = client;
+
+        await client.LiveActivities.Activity("order_42").Step("arrived").Progress(0.5).UpdateAsync();
+        Assert.Equal("/partner/live-activities/order_42/update", transport.Last.Path);
+        var update = transport.Last.Object;
+        Assert.Equal("arrived", update["data"]!["step"]!.ToString());
+        Assert.Equal(0.5, update["data"]!["progress"]!.GetValue<double>());
+        Assert.False(update.ContainsKey("contentState"));
+
+        await client.LiveActivities.Activity("order_42").Step("completed").EndAsync();
+        Assert.Equal("/partner/live-activities/order_42/end", transport.Last.Path);
+        Assert.Equal("completed", transport.Last.Object["data"]!["step"]!.ToString());
+
+        await client.LiveActivities.Activity("order_42").Canceled().EndAsync();
+        Assert.Equal("canceled", transport.Last.Object["data"]!["state"]!.ToString());
+    }
+
+    [Fact]
+    public async Task Progress_alone_keeps_the_plain_content_state()
+    {
+        var (client, transport) = TestClient.Create(_ => RecordingTransport.Json(200, """{"ios":0,"android":0}"""));
+        await using var _ = client;
+
+        await client.LiveActivities.Activity("order_42").Status("On the way").Progress(70).UpdateAsync();
+        var body = transport.Last.Object;
+        Assert.Equal("On the way", body["contentState"]!["status"]!.ToString());
+        Assert.False(body.ContainsKey("data"));
+    }
+
+    [Fact]
+    public async Task Template_plain_methods_and_inline_designs()
+    {
+        var (client, transport) = TestClient.Create(_ => RecordingTransport.Json(200, """{"ios":0,"android":1}"""));
+        await using var _ = client;
+
+        await client.LiveActivities.StartTemplateAsync("order_tracking", "o1");
+        Assert.IsType<JsonObject>(transport.Last.Object["data"]); // {} — never omitted or []
+
+        var design = new JsonObject { ["layout"] = "steps", ["steps"] = new JsonArray(new JsonObject { ["id"] = "a" }, new JsonObject { ["id"] = "b" }) };
+        await client.LiveActivities.StartTemplateAsync(design, "o2", new { step = "a" });
+        Assert.Equal(2, (transport.Last.Object["template"]!["steps"] as JsonArray)!.Count);
+
+        await client.LiveActivities.UpdateDataAsync("o2", new JsonObject { ["step"] = "b", ["etaAt"] = null });
+        Assert.True(transport.Last.Object["data"]!.AsObject().ContainsKey("etaAt")); // null clears it server-side
+
+        await client.LiveActivities.EndWithDataAsync("o2", new { state = "done" });
+        Assert.Equal("done", transport.Last.Object["data"]!["state"]!.ToString());
+    }
+
+    [Fact]
+    public async Task Eta_in_milliseconds_is_converted()
+    {
+        var (client, transport) = TestClient.Create(_ => RecordingTransport.Json(200, """{"ios":0,"android":0}"""));
+        await using var _ = client;
+
+        await client.LiveActivities.Template("t", "o").EtaAt(1792584000123L).StartAsync();
+        Assert.Equal(1792584000L, transport.Last.Object["data"]!["etaAt"]!.GetValue<long>());
+    }
+
+    [Fact]
+    public async Task Starting_needs_a_template_or_a_type()
+    {
+        var (client, _) = TestClient.Create(_ => RecordingTransport.Json(200, """{"ios":0,"android":0}"""));
+        await using var __ = client;
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.LiveActivities.Activity("o").Step("a").StartAsync());
+        Assert.Contains("template", ex.Message);
+    }
+
+    [Fact]
     public async Task Invalid_enumerations_are_rejected_at_the_call_site()
     {
         var (client, transport) = TestClient.Create();

@@ -13,7 +13,7 @@
     <!-- One version number for every package in the repo. Clearing VersionSuffix is
          what promotes a release candidate to the final 1.0.0. -->
     <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix>rc.1</VersionSuffix>
+    <VersionSuffix>rc.2</VersionSuffix>
   </PropertyGroup>
 
   <!-- Package metadata, shared by every shipping project. Test and sample

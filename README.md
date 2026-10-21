@@ -573,6 +573,38 @@ await nexus.InApp.DismissAsync("msg_1");
 
 ## 17. Live Activities
 
+### Templates (recommended)
+
+Design the activity once in the Nexus console (**Live Activities → Templates**:
+layout, colours, steps, icons, translations). The Nexus mobile SDKs render it on
+iOS and Android, each device in its own language — your server sends only data:
+
+```csharp
+await nexus.LiveActivities.Template("order_tracking", "order_42")   // template key + your id
+    .Step("pending")                                               // a step id (or label)
+    .EtaAt(DateTimeOffset.UtcNow.AddMinutes(25))                   // live countdown on the device
+    .Value("driver", "Ahmed").Value("quantity", "500 L · Diesel")  // {{placeholders}}
+    .ToUser("user_1")
+    .StartAsync();
+
+// Updates are partial — only what changed; the server merges it.
+await nexus.LiveActivities.Activity("order_42").Step("on_the_way").Progress(0.4).UpdateAsync();
+await nexus.LiveActivities.Activity("order_42").Step("completed").EndAsync();   // final state
+await nexus.LiveActivities.Activity("order_42").Canceled().EndAsync();          // or canceled
+```
+
+Data setters: `Step`, `Progress` (0–1 toward the next step), `EtaAt` (a
+`DateTimeOffset` or unix seconds / ms) or `Eta("8 min")` for fixed text,
+`Value(key, value)` / `Values(object)`, `Canceled()`, `Done()`, `Data(object)`,
+`Title/Subtitle/Body` (override the template's texts). Start only: `Lang("ar")`
+forces one language for everyone (default: each device's app language),
+`Alert(title, body)`. Plain methods: `StartTemplateAsync(template, id, data, …)`,
+`UpdateDataAsync(id, data)`, `EndWithDataAsync(id, data)`; a null inside `data`
+clears a field. `template` may also be an inline design object. The start result
+has `IosTargets` and, when iOS got nothing, an `IosWarning` saying why.
+
+### Plain (your own iOS widget)
+
 ```csharp
 await nexus.LiveActivities.Activity("DeliveryAttributes", "order_42")
     .Title("Order #42").Status("Preparing").Progress(20)
@@ -589,7 +621,8 @@ start — on iOS they are ActivityKit's static attributes and a later update can
 change them, so anything that will change belongs in the content state.
 
 iOS needs the APNs key configured in the console (Live Activities cannot go through
-FCM) and a Widget Extension in the app. Android needs no extra setup.
+FCM) and the one-time Widget Extension in the app (see the Flutter SDK README).
+Android needs no extra setup.
 
 ---
 

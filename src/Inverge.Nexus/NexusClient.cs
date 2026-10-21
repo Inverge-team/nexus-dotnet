@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -270,6 +271,11 @@ public sealed class NexusClient : INexusClient
             throw new ArgumentNullException(nameof(request));
         }
 
+        if (SwitchedOff(request.Path))
+        {
+            return null;
+        }
+
         if (IsDisposed)
         {
             // Throwing here would turn a shutdown-ordering mistake into a crash on
@@ -376,8 +382,46 @@ public sealed class NexusClient : INexusClient
             .GetResult();
     }
 
+    /// <summary>
+    /// Whether a product is on — <see cref="NexusOptions.Enabled"/>,
+    /// <see cref="NexusOptions.Services"/> and the <c>NEXUS_&lt;SERVICE&gt;_ENABLED</c>
+    /// environment, off wins. Every service is on by default.
+    /// </summary>
+    public bool IsServiceEnabled(string service) => _options.IsServiceEnabled(service);
+
+    // Switched-off services already reported (once each).
+    private readonly ConcurrentDictionary<string, bool> _skipped = new ConcurrentDictionary<string, bool>(StringComparer.Ordinal);
+
+    /// <summary>A switched-off service is a no-op: no request, no exception, a neutral result.</summary>
+    private bool SwitchedOff(string path)
+    {
+        var service = NexusServices.ForPath(path);
+        if (service is null)
+        {
+            return false;
+        }
+
+        var reason = _options.ServiceOffReason(service);
+        if (reason is null)
+        {
+            return false;
+        }
+
+        if (_skipped.TryAdd(service, true))
+        {
+            _diagnostics.Information("Nexus " + service + " is switched off (" + reason + ") — skipping its calls.");
+        }
+
+        return true;
+    }
+
     internal void EnqueueEvent(JsonObject item, NexusTelemetryContext context)
     {
+        if (!_options.IsServiceEnabled(NexusServices.Events))
+        {
+            return; // switched off — don't even buffer
+        }
+
         if (_events is not null)
         {
             _events.Add(item, context);
@@ -391,6 +435,11 @@ public sealed class NexusClient : INexusClient
 
     internal void EnqueueLog(JsonObject item, NexusTelemetryContext context)
     {
+        if (!_options.IsServiceEnabled(NexusServices.Logs))
+        {
+            return; // switched off — don't even buffer
+        }
+
         if (_logs is not null)
         {
             _logs.Add(item, context);

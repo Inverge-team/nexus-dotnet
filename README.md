@@ -199,6 +199,46 @@ putting a live key in a committed file.
 
 ---
 
+### Switching services off
+
+**Every service is on by default.** Turn one off without removing the code that
+uses it — e.g. stop Live Activities with one environment variable. A
+switched-off service makes no request and never throws (even without `Silent`):
+calls return their neutral result (flags → your fallback, Remote Config → your
+default, results → zero counts), events and logs aren't even buffered, and the
+realtime socket doesn't connect.
+
+```bash
+NEXUS_LIVE_ACTIVITIES_ENABLED=false   # just Live Activities
+NEXUS_ENABLED=false                   # everything (e.g. tests / CI)
+```
+
+| Variable | `NexusServices.` | Switches off |
+|---|---|---|
+| `NEXUS_REALTIME_ENABLED` | `Realtime` | rooms / emits / the realtime socket |
+| `NEXUS_EVENTS_ENABLED` | `Events` | events |
+| `NEXUS_ERRORS_ENABLED` | `Errors` | error capture |
+| `NEXUS_LOGS_ENABLED` | `Logs` | logs |
+| `NEXUS_SESSIONS_ENABLED` | `Sessions` | sessions |
+| `NEXUS_FLAGS_ENABLED` | `Flags` | feature flags (→ your fallback) |
+| `NEXUS_REMOTE_CONFIG_ENABLED` | `RemoteConfig` | Remote Config (→ your default) |
+| `NEXUS_LINKS_ENABLED` | `Links` | deep links |
+| `NEXUS_SURVEYS_ENABLED` | `Surveys` | surveys |
+| `NEXUS_PUSH_ENABLED` | `Push` | push notifications |
+| `NEXUS_IN_APP_ENABLED` | `InApp` | in-app messages |
+| `NEXUS_LIVE_ACTIVITIES_ENABLED` | `LiveActivities` | Live Activities |
+| `NEXUS_REPLAY_ENABLED` | `Replay` | session replay |
+| `NEXUS_VOICE_ENABLED` | `Voice` | voice |
+
+`false`, `0`, `off`, `no` mean off. In code: `options.Services[NexusServices.Push] = false`
+or `options.Enabled = false`; in `appsettings.json`:
+`"Nexus": { "Services": { "LiveActivities": false } }` (the other SDKs' names such
+as `liveActivities` work too; unknown names fail validation). Off wins: a service
+is on only if neither the code nor the environment turns it off.
+`client.IsServiceEnabled(NexusServices.Push)` tells you whether one is on.
+
+---
+
 ## 5. Identity and ambient context
 
 Every event, log line and error carries identity, a session and device fields.

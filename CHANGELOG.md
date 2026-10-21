@@ -4,6 +4,18 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.3] — 2026-10-22
+
+### Added
+
+- **Switch services off without removing code** — every service is on by default;
+  `NEXUS_<SERVICE>_ENABLED=false` / `NEXUS_ENABLED=false`, or
+  `NexusOptions.Services[...] = false` / `Enabled = false`, or
+  `"Nexus": { "Services": { ... } }` in configuration. Off wins. A switched-off
+  service makes no request and never throws (even without `Silent`), events/logs
+  aren't buffered, the realtime socket doesn't connect.
+  `NexusClient.IsServiceEnabled`, `NexusServices` constants.
+
 ## [1.0.0-rc.2] — 2026-10-21
 
 ### Added

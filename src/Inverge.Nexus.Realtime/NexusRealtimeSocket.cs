@@ -176,6 +176,11 @@ public sealed class NexusRealtimeSocket : IAsyncDisposable
     /// <summary>Opens the connection. Idempotent.</summary>
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
+        if (!_nexusOptions.IsServiceEnabled(NexusServices.Realtime))
+        {
+            return; // switched off (NEXUS_REALTIME_ENABLED / NEXUS_ENABLED / options) — never connect
+        }
+
         await _connectGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {

@@ -70,6 +70,9 @@ public static class NexusServices
     /// <summary>Voice.</summary>
     public const string Voice = "voice";
 
+    /// <summary>Telescope — request-journey tracing.</summary>
+    public const string Telescope = "telescope";
+
     /// <summary>The master switch: <c>NEXUS_ENABLED</c>.</summary>
     public const string AllEnvironmentVariable = "NEXUS_ENABLED";
 
@@ -91,6 +94,7 @@ public static class NexusServices
             [LiveActivities] = "NEXUS_LIVE_ACTIVITIES_ENABLED",
             [Replay] = "NEXUS_REPLAY_ENABLED",
             [Voice] = "NEXUS_VOICE_ENABLED",
+            [Telescope] = "NEXUS_TELESCOPE_ENABLED",
         };
 
     // The other Nexus SDKs' spellings, so one shared config can drive any of them.
@@ -120,6 +124,7 @@ public static class NexusServices
         ["live-activities"] = LiveActivities,
         ["replay"] = Replay,
         ["voice"] = Voice,
+        ["telescope"] = Telescope,
     };
 
     /// <summary>The canonical service name (accepts <c>liveActivities</c> etc.), or null if unknown.</summary>

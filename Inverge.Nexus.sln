@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inverge.Nexus.Sample.Minima
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inverge.Nexus.Sample.Worker", "samples\Inverge.Nexus.Sample.Worker\Inverge.Nexus.Sample.Worker.csproj", "{EEAF5C80-E7AB-451A-A960-4547D4FD5B7F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Inverge.Nexus.Telescope", "src\Inverge.Nexus.Telescope\Inverge.Nexus.Telescope.csproj", "{EB51EED3-880B-4646-8D0B-2F733B1413AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -117,6 +119,18 @@ Global
 		{EEAF5C80-E7AB-451A-A960-4547D4FD5B7F}.Release|x64.Build.0 = Release|Any CPU
 		{EEAF5C80-E7AB-451A-A960-4547D4FD5B7F}.Release|x86.ActiveCfg = Release|Any CPU
 		{EEAF5C80-E7AB-451A-A960-4547D4FD5B7F}.Release|x86.Build.0 = Release|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Debug|x64.Build.0 = Debug|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Debug|x86.Build.0 = Debug|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Release|x64.ActiveCfg = Release|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Release|x64.Build.0 = Release|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Release|x86.ActiveCfg = Release|Any CPU
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -129,5 +143,6 @@ Global
 		{237A06C6-C991-49BB-9C72-243609926A9B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{6AC0B1FC-6EC0-476B-B87A-3894D1B8143A} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 		{EEAF5C80-E7AB-451A-A960-4547D4FD5B7F} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
+		{EB51EED3-880B-4646-8D0B-2F733B1413AE} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

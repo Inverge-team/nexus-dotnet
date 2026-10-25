@@ -4,6 +4,21 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.4] — 2026-10-25
+
+### Added
+
+- **`Inverge.Nexus.Telescope`** (new package, net8/net9) — Nexus Telescope request
+  journeys built on `System.Diagnostics.Activity`: ASP.NET Core requests, message
+  consumers (MassTransit, Azure SDK) and your own `RunAsync(...)` jobs/commands are
+  units of work; HttpClient calls (W3C propagation), EF Core / SqlClient queries
+  with parameters, Npgsql and any other Activity become entries; an ILogger
+  provider records log lines. `services.AddNexusTelescope()`; spans with
+  `telescope.Span(...)`; tail sampling and console settings.
+- **`app.UseNexusTelescope()`** in `Inverge.Nexus.AspNetCore` — adds the request
+  details (route pattern, headers, bodies, user, unhandled exceptions as 500).
+- `NexusServices.Telescope` (`NEXUS_TELESCOPE_ENABLED`).
+
 ## [1.0.0-rc.3] — 2026-10-22
 
 ### Added

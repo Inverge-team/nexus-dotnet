@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Inverge.Nexus\Inverge.Nexus.csproj" />
     <ProjectReference Include="..\..\src\Inverge.Nexus.Extensions.Logging\Inverge.Nexus.Extensions.Logging.csproj" />
     <ProjectReference Include="..\..\src\Inverge.Nexus.AspNetCore\Inverge.Nexus.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Inverge.Nexus.Telescope\Inverge.Nexus.Telescope.csproj" />
   </ItemGroup>
 
   <ItemGroup>

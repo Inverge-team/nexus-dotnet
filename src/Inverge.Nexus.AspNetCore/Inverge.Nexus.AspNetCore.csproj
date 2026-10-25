@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Inverge.Nexus\Inverge.Nexus.csproj" />
     <ProjectReference Include="..\Inverge.Nexus.Extensions.Logging\Inverge.Nexus.Extensions.Logging.csproj" />
+    <ProjectReference Include="..\Inverge.Nexus.Telescope\Inverge.Nexus.Telescope.csproj" />
   </ItemGroup>
 
 </Project>

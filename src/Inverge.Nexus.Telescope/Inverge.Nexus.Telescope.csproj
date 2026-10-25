@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- ActivityListener and the runtime's built-in instrumentation (ASP.NET Core,
+         HttpClient W3C propagation) make this modern-only. -->
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <AssemblyName>Inverge.Nexus.Telescope</AssemblyName>
+    <RootNamespace>Inverge.Nexus.Telescope</RootNamespace>
+    <PackageId>Inverge.Nexus.Telescope</PackageId>
+    <Description>Nexus Telescope for .NET: records every request, background job and command with its whole journey — EF Core / ADO.NET queries with N+1 detection, outgoing HttpClient calls with W3C trace propagation, logs, exceptions and any System.Diagnostics Activity — and ships it to the Nexus console.</Description>
+    <!-- Diagnostic payloads (EF Core, SqlClient) are read by reflection, because this
+         package must not reference those libraries. Not trim/AOT-annotated. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inverge.Nexus\Inverge.Nexus.csproj" />
+    <ProjectReference Include="..\Inverge.Nexus.Extensions.Logging\Inverge.Nexus.Extensions.Logging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+</Project>

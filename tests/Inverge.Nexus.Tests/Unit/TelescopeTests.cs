@@ -83,6 +83,42 @@ public class TelescopeTests
     }
 
     [Fact]
+    public async Task Requests_answered_with_an_ignored_status_are_never_sent()
+    {
+        var (client, transport) = TestClient.Create(_ => RecordingTransport.Json(202, """{"written":1,"config":{"enabled":true,"ignoreStatuses":["3xx"]}}"""));
+        await using var _ = client;
+        var options = new TelescopeOptions();
+        options.IgnoreStatuses.Add("200");
+        options.IgnoreStatuses.Add("401-403");
+        using var telescope = new NexusTelescope(client, options);
+        telescope.Start();
+
+        async Task Request(string status)
+        {
+            await telescope.RunAsync("request", "GET /" + status, () =>
+            {
+                telescope.RecordQuery("select 1", Array.Empty<object?>(), 0.1, "postgres");
+                telescope.SetStatus(status);
+                return Task.CompletedTask;
+            });
+            await telescope.FlushAsync();
+        }
+
+        await Request("200");
+        await Request("402");
+        await Request("404"); // this delivery brings the console's 3xx
+        await Request("302");
+        await telescope.RunAsync("command", "reports:send", () => { telescope.SetStatus("200"); return Task.CompletedTask; });
+        await telescope.FlushAsync();
+
+        var batches = Batches(transport);
+        Assert.Equal(new[] { "404" }, batches.Where(b => b["type"]!.GetValue<string>() == "request").Select(b => b["status"]!.GetValue<string>()));
+        Assert.Single(batches, b => b["type"]!.GetValue<string>() == "command"); // only requests are filtered
+        Assert.True(telescope.IgnoresStatus("304"));
+        Assert.False(telescope.IgnoresStatus("ok"));
+    }
+
+    [Fact]
     public async Task Aspnetcore_requests_record_route_status_bodies_and_outgoing_calls_that_join_the_trace()
     {
         var (client, transport) = TestClient.Create(_ => RecordingTransport.Json(202, """{"written":1}"""));

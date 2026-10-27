@@ -59,6 +59,32 @@ internal static class Redactor
         }
     }
 
+    /// <summary><c>200</c> (exact), <c>2xx</c> (class) or <c>301-304</c> (inclusive range) against a 3-digit status.</summary>
+    public static bool StatusMatch(string pattern, string status)
+    {
+        if (status.Length != 3 || !status.All(char.IsAsciiDigit))
+        {
+            return false;
+        }
+
+        var p = pattern.Trim().ToLowerInvariant();
+        if (p.Length == 3 && char.IsAsciiDigit(p[0]) && p.EndsWith("xx", StringComparison.Ordinal))
+        {
+            return p[0] == status[0];
+        }
+
+        var dash = p.IndexOf('-');
+        if (dash > 0
+            && int.TryParse(p.AsSpan(0, dash).Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var from)
+            && int.TryParse(p.AsSpan(dash + 1).Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var to))
+        {
+            var code = int.Parse(status, System.Globalization.CultureInfo.InvariantCulture);
+            return code >= from && code <= to;
+        }
+
+        return p == status;
+    }
+
     public static bool GlobMatch(string glob, string value)
         => Regex.IsMatch(value, "^" + string.Join(".*", glob.Split('*').Select(Regex.Escape)) + "$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(50));
 }

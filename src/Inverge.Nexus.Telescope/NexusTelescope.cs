@@ -59,6 +59,14 @@ public sealed class NexusTelescope : IDisposable
         {
             _options.SampleRate = rate;
         }
+
+        if (_options.IgnoreStatuses.Count == 0 && Environment.GetEnvironmentVariable("NEXUS_TELESCOPE_IGNORE_STATUSES") is { Length: > 0 } statuses)
+        {
+            foreach (var s in statuses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                _options.IgnoreStatuses.Add(s);
+            }
+        }
     }
 
     /// <summary>The options in effect.</summary>
@@ -315,6 +323,10 @@ public sealed class NexusTelescope : IDisposable
     public bool IgnoresPath(string path)
         => _options.IgnorePaths.Concat(_remote.IgnorePaths).Any(glob => Redactor.GlobMatch(glob, path));
 
+    /// <summary>Whether a response status is ignored (<c>200</c>, <c>2xx</c>, <c>301-304</c>; options + console settings).</summary>
+    public bool IgnoresStatus(string status)
+        => _options.IgnoreStatuses.Concat(_remote.IgnoreStatuses).Any(pattern => Redactor.StatusMatch(pattern, status));
+
     internal bool IgnoresType(string type) => _options.IgnoreTypes.Contains(type) || _remote.IgnoreTypes.Contains(type);
 
     /// <summary>The body capture limit in bytes.</summary>
@@ -474,7 +486,11 @@ public sealed class NexusTelescope : IDisposable
             batch.Failed = true;
         }
 
-        if (Keep(batch))
+        // An ignored response status drops the request with every entry,
+        // before anything leaves the app.
+        var responseStatus = batch.Status ?? batch.Content["responseStatus"]?.ToString();
+        var ignored = batch.Type == "request" && responseStatus is not null && IgnoresStatus(responseStatus);
+        if (!ignored && Keep(batch))
         {
             _outbox.Writer.TryWrite(batch.ToWire());
         }

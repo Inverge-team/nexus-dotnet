@@ -45,6 +45,9 @@ public interface INexusClient : IDisposable, IAsyncDisposable
     /// <summary>Deep links and attribution.</summary>
     LinksResource Links { get; }
 
+    /// <summary>App &amp; device integrity: verify tokens your apps send.</summary>
+    ShieldResource Shield { get; }
+
     /// <summary>In-product surveys.</summary>
     SurveysResource Surveys { get; }
 

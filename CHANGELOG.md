@@ -4,6 +4,19 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.5] — 2026-10-27
+
+### Added
+- **Nexus Shield** — `client.Shield.VerifyRequestAsync(headers, method, url,
+  body, resource)` / `VerifyAsync(token, proof, method, url, resource,
+  bodyHash)`: verify that a request comes from your genuine app on a real
+  device. Reads `X-Nexus-Shield` + `DPoP`, binds the raw body
+  (`ShieldResource.BodyHash`), returns a `ShieldVerdict` (`Allowed`, `Reason`,
+  `Score`, `Level`, `Providers`, `DeviceId`, …). Replay protection, blocked
+  devices and the resource's console policy are applied by Nexus. Never
+  retried (a retry would see its own proof as replayed).
+- Service switch `NexusServices.Shield` / `NEXUS_SHIELD_ENABLED`.
+
 ## [1.0.0-rc.4] — 2026-10-25
 
 ### Added

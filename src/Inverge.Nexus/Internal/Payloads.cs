@@ -285,6 +285,24 @@ internal static class Payloads
         return new NexusRequest("POST", "/partner/links/attribute", body.Build(), retryable: true);
     }
 
+    // ── Shield ─────────────────────────────────────────────────────────────
+
+    // Never retried: verify burns the proof's jti, so a repeat of a request that
+    // did reach the server would come back as `proof_replayed`.
+    public static NexusRequest ShieldVerify(string token, string? proof, string method, string url, string? resource, string? bodyHash)
+        => new NexusRequest(
+            "POST",
+            "/partner/shield/verify",
+            JsonBody.Create()
+                .Set("token", token)
+                .Set("proof", proof)
+                .Set("method", method.ToUpperInvariant())
+                .Set("url", url)
+                .Set("resource", resource)
+                .Set("bodyHash", bodyHash)
+                .Build(),
+            retryable: false);
+
     // ── Surveys ────────────────────────────────────────────────────────────
 
     public static NexusRequest SurveysActive(

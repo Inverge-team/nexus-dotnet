@@ -151,6 +151,7 @@ public sealed class NexusClient : INexusClient
         LiveActivities = new LiveActivitiesResource(this);
         Replay = new ReplayResource(this);
         Voice = new VoiceResource(this);
+        Shield = new ShieldResource(this);
     }
 
     /// <inheritdoc />
@@ -179,6 +180,9 @@ public sealed class NexusClient : INexusClient
 
     /// <inheritdoc />
     public LinksResource Links { get; }
+
+    /// <inheritdoc />
+    public ShieldResource Shield { get; }
 
     /// <inheritdoc />
     public SurveysResource Surveys { get; }

@@ -224,9 +224,8 @@ public sealed class NexusOptions
     /// <remarks>
     /// The ordering matters and is the whole point: explicit code wins over the
     /// environment for the values it sets, while the values it leaves alone stay
-    /// environment-driven. That is what lets <c>NEXUS_BASE_URL</c> repoint a
-    /// staging deploy whose API key is assigned in code — without it, passing a
-    /// key in code silently sends staging traffic to production.
+    /// environment-driven, so a deployment can change settings such as
+    /// <c>NEXUS_TIMEOUT</c> or the API key without a rebuild.
     /// </remarks>
     public static NexusOptions FromEnvironment(Action<NexusOptions>? configure = null)
     {

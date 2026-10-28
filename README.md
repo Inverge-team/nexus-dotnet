@@ -43,6 +43,7 @@ on the documentation site:
 - **[Shield](https://docs.inverge.net/products/shield/verify)** — verify a request really comes from your app on a real device.
 - **[Telescope](https://docs.inverge.net/products/telescope/dotnet)** — request-journey tracing for requests, jobs, EF Core / SqlClient
   queries and HttpClient calls, with N+1, duplicate and slow queries flagged.
+- **[DocStore](https://docs.inverge.net/sdks/dotnet/reference/docstore)** — the document database: queries, transactions, history, change stream and webhook verification.
 
 ## Releasing
 

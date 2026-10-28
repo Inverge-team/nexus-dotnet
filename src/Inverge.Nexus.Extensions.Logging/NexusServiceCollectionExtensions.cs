@@ -26,7 +26,7 @@ public static class NexusServiceCollectionExtensions
     /// Options are read from the <c>Nexus</c> configuration section first, then the
     /// <c>NEXUS_*</c> environment, then <paramref name="configure"/>. Code wins over
     /// the environment, and the environment wins over appsettings — so a container
-    /// can repoint or re-key a deploy without a rebuild.
+    /// can be re-keyed or retuned without a rebuild.
     /// </para>
     /// <para>
     /// The client sends through a named <c>IHttpClientFactory</c> client, so the
@@ -146,7 +146,7 @@ public static class NexusServiceCollectionExtensions
             }
 
             // Then the NEXUS_* environment, which is how a deployed container is
-            // repointed without touching its image.
+            // reconfigured without touching its image.
             options.ApplyEnvironment();
 
             // Highest precedence: what the application said in code.

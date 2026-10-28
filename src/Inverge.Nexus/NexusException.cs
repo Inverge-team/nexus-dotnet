@@ -158,6 +158,38 @@ public sealed class NexusNotFoundException : NexusApiException
     }
 }
 
+/// <summary>
+/// 409 — the write conflicts with the current state: a DocStore version
+/// precondition failed (<see cref="IsPreconditionFailed"/>), a unique
+/// constraint was violated, or a document already exists.
+/// </summary>
+public sealed class NexusConflictException : NexusApiException
+{
+    /// <summary>Creates the exception.</summary>
+    public NexusConflictException(
+        string message, int status, string? code, JsonNode? details, string? method, string? path, string? responseBody)
+        : base(message, status, code, details, method, path, responseBody)
+    {
+    }
+
+    /// <summary>A version precondition failed — someone else wrote first.</summary>
+    public bool IsPreconditionFailed => Details.Str("reason") == "precondition_failed";
+}
+
+/// <summary>
+/// The product is switched off (<c>NEXUS_&lt;SERVICE&gt;_ENABLED=false</c> or
+/// <c>Services</c>). Most services become silent no-ops when off; DocStore
+/// throws this instead, because a read that quietly returns nothing looks
+/// exactly like missing data.
+/// </summary>
+public sealed class NexusServiceDisabledException : NexusException
+{
+    /// <summary>Creates the exception.</summary>
+    public NexusServiceDisabledException(string message) : base(message)
+    {
+    }
+}
+
 /// <summary>400 or 422 — the request body failed server-side validation.</summary>
 public sealed class NexusValidationException : NexusApiException
 {
@@ -255,6 +287,8 @@ internal static class NexusApiExceptionFactory
 
         switch (status)
         {
+            case 409:
+                return new NexusConflictException(message!, status, code, details, method, path, body);
             case 400:
             case 422:
                 return new NexusValidationException(message!, status, code, details, method, path, body);

@@ -21,6 +21,12 @@ public sealed class TelescopeOptions
     /// <summary>Request paths never recorded (globs, <c>*</c> = anything).</summary>
     public IList<string> IgnorePaths { get; } = new List<string> { "/health*", "/healthz", "/favicon.ico", "/swagger*", "/_framework/*" };
 
+    /// <summary>
+    /// Requests answered with one of these statuses are never sent, with every entry they recorded:
+    /// <c>200</c>, <c>2xx</c> or <c>301-304</c>. Merged with the console's list. Default: <c>NEXUS_TELESCOPE_IGNORE_STATUSES</c> (comma separated).
+    /// </summary>
+    public IList<string> IgnoreStatuses { get; } = new List<string>();
+
     /// <summary>Entry types never recorded (<c>log</c>, <c>cache</c>, …).</summary>
     public IList<string> IgnoreTypes { get; } = new List<string>();
 

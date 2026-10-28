@@ -76,6 +76,9 @@ public static class NexusServices
     /// <summary>Shield — app &amp; device integrity verification.</summary>
     public const string Shield = "shield";
 
+    /// <summary>DocStore — the document database.</summary>
+    public const string DocStore = "docstore";
+
     /// <summary>The master switch: <c>NEXUS_ENABLED</c>.</summary>
     public const string AllEnvironmentVariable = "NEXUS_ENABLED";
 
@@ -99,6 +102,7 @@ public static class NexusServices
             [Voice] = "NEXUS_VOICE_ENABLED",
             [Telescope] = "NEXUS_TELESCOPE_ENABLED",
             [Shield] = "NEXUS_SHIELD_ENABLED",
+            [DocStore] = "NEXUS_DOCSTORE_ENABLED",
         };
 
     // The other Nexus SDKs' spellings, so one shared config can drive any of them.
@@ -130,6 +134,7 @@ public static class NexusServices
         ["voice"] = Voice,
         ["telescope"] = Telescope,
         ["shield"] = Shield,
+        ["docstore"] = DocStore,
     };
 
     /// <summary>The canonical service name (accepts <c>liveActivities</c> etc.), or null if unknown.</summary>

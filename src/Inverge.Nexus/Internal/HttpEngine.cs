@@ -28,6 +28,13 @@ internal sealed class HttpEngine : IDisposable
 
     private static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// A usage cap set in the console is a 429 too, but waiting won't lift it
+    /// before next month — report it at once instead of backing off.
+    /// </summary>
+    private static bool IsUsageCap(NexusTransportResponse response) =>
+        response.Status == 429 && response.Text.IndexOf("usage_limit_exceeded", StringComparison.Ordinal) >= 0;
+
     private readonly NexusOptions _options;
     private readonly INexusTransport _transport;
     private readonly bool _ownsTransport;
@@ -110,7 +117,7 @@ internal sealed class HttpEngine : IDisposable
                 continue;
             }
 
-            if (!response.IsSuccess && RetryStatuses.Contains(response.Status) && attempt + 1 < attempts)
+            if (!response.IsSuccess && RetryStatuses.Contains(response.Status) && !IsUsageCap(response) && attempt + 1 < attempts)
             {
                 await DelayAsync(Backoff(attempt, response), cancellationToken).ConfigureAwait(false);
                 continue;

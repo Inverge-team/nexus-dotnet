@@ -173,6 +173,8 @@ internal sealed class RemoteSettings
 
     public IReadOnlyList<string> IgnorePaths { get; private set; } = Array.Empty<string>();
 
+    public IReadOnlyList<string> IgnoreStatuses { get; private set; } = Array.Empty<string>();
+
     public IReadOnlyList<string> IgnoreTypes { get; private set; } = Array.Empty<string>();
 
     public IReadOnlyList<string> RedactKeys { get; private set; } = Array.Empty<string>();
@@ -188,6 +190,7 @@ internal sealed class RemoteSettings
             SampleRate = c["sampleRate"]?.GetValue<double>() ?? 1,
             SlowRequestMs = c["slowRequestMs"]?.GetValue<double>() ?? 1000,
             IgnorePaths = List(c["ignorePaths"]),
+            IgnoreStatuses = List(c["ignoreStatuses"]),
             IgnoreTypes = List(c["ignoreTypes"]),
             RedactKeys = List(c["redactKeys"]),
             MonitoredTags = List(c["monitoredTags"]),

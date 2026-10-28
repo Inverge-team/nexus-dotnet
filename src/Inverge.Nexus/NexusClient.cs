@@ -301,6 +301,38 @@ public sealed class NexusClient : INexusClient
         }
     }
 
+    /// <summary>
+    /// Nexus DocStore — the document database. With a service key
+    /// (<paramref name="serviceKey"/> or <c>NEXUS_DOCSTORE_SERVICE_KEY</c>)
+    /// security rules are bypassed — server use only; with
+    /// <paramref name="token"/> (an end user's JWT) rules apply as that user.
+    /// </summary>
+    public DocStore.DocStoreClient DocStore(string? serviceKey = null, string? token = null)
+    {
+        var key = serviceKey ?? Environment.GetEnvironmentVariable(Inverge.Nexus.DocStore.DocStoreClient.ServiceKeyEnvironmentVariable);
+        return new DocStore.DocStoreClient(this, string.IsNullOrEmpty(key) ? null : key, token);
+    }
+
+    /// <summary>
+    /// Sends straight through the engine — always awaited and always raising,
+    /// whatever dispatcher or <c>Silent</c> setting telemetry uses. For
+    /// products whose results callers depend on (DocStore).
+    /// </summary>
+    internal async Task<JsonNode?> ExecuteDirectAsync(NexusRequest request, string service, CancellationToken cancellationToken)
+    {
+        if (_options.ServiceOffReason(service) is string reason)
+        {
+            throw new NexusServiceDisabledException(service + " is switched off (" + reason + ").");
+        }
+
+        if (IsDisposed)
+        {
+            throw new ObjectDisposedException(nameof(NexusClient));
+        }
+
+        return await _engine.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc />
     public NexusTelemetryContext ResolveContext(NexusTelemetryContext? contextOverrides = null)
         => _baseline.Merge(NexusContext.Current).Merge(contextOverrides);

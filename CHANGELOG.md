@@ -4,6 +4,44 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.7] — 2026-10-28
+
+### Added
+- **Nexus DocStore** — the document database, in `Inverge.Nexus.DocStore`.
+  `client.DocStore()` (service key from `NEXUS_DOCSTORE_SERVICE_KEY` or the
+  argument — rules bypassed) and `.AsUser(jwt)` (security rules apply).
+  - `Collection(name).Doc(id).GetAsync/SetAsync/UpdateAsync/DeleteAsync`,
+    `AddAsync`, immutable queries (`Where`, `Filter.Or/And/Not/Related`,
+    `OrderBy`, `Limit`, `StartAfter`, `Select`, `Expand`, `Search`, `AsOf`,
+    `WithCount`, `GetAsync`, `CountAsync`, `AggregateAsync` with group-by).
+  - `FieldValue.Increment / Multiply / Minimum / Maximum / ArrayUnion /
+    ArrayRemove / ArrayPush / ServerTimestamp / Delete / Merge`.
+  - `Batch()`, `RunTransactionAsync` (optimistic, retried on a race),
+    `ifVersion` preconditions, `HistoryAsync`, `RestoreAsync`, whole-collection
+    `RestoreAsync(asOf, dryRun)`.
+  - `ChangesAsync` / `WatchChangesAsync(handler, since)` — resumable change stream.
+  - `DeployCollectionAsync` — collections as code.
+  - `DocStoreWebhook.Verify` for DocStore trigger webhooks.
+  - New `NexusConflictException` (409, `IsPreconditionFailed`) and
+    `NexusServiceDisabledException`. DocStore calls always throw (also with
+    `Silent`) and bypass the background dispatcher. New service switch
+    `NexusServices.DocStore` / `NEXUS_DOCSTORE_ENABLED`.
+
+### Changed
+- A `429` whose error code is `usage_limit_exceeded` (a usage limit set in the
+  console was reached) is thrown at once instead of retried — waiting cannot
+  lift it before next month. Other `429`s still back off and retry.
+
+## [1.0.0-rc.6] — 2026-10-27
+
+### Added
+- **Telescope: ignore response statuses.** `TelescopeOptions.IgnoreStatuses`
+  (`"200"`, `"3xx"`, `"401-403"`; or `NEXUS_TELESCOPE_IGNORE_STATUSES=200,304`):
+  a request answered with a matching status is never sent, together with every
+  entry it recorded. Merged with the list set in the console (Telescope →
+  Settings), which the SDK now also applies before sending.
+  `NexusTelescope.IgnoresStatus(status)`.
+
 ## [1.0.0-rc.5] — 2026-10-27
 
 ### Added

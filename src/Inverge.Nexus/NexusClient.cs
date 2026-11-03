@@ -152,6 +152,7 @@ public sealed class NexusClient : INexusClient
         Replay = new ReplayResource(this);
         Voice = new VoiceResource(this);
         Shield = new ShieldResource(this);
+        Messaging = new MessagingResource(this);
     }
 
     /// <inheritdoc />
@@ -183,6 +184,13 @@ public sealed class NexusClient : INexusClient
 
     /// <inheritdoc />
     public ShieldResource Shield { get; }
+
+    /// <summary>
+    /// Messaging — send on WhatsApp, Telegram, SMS and the other channels, and run
+    /// OTP verifications. Not on <see cref="INexusClient"/> (adding a member would
+    /// break implementers); always direct and always throwing on failure.
+    /// </summary>
+    public MessagingResource Messaging { get; }
 
     /// <inheritdoc />
     public SurveysResource Surveys { get; }
@@ -323,6 +331,26 @@ public sealed class NexusClient : INexusClient
         if (_options.ServiceOffReason(service) is string reason)
         {
             throw new NexusServiceDisabledException(service + " is switched off (" + reason + ").");
+        }
+
+        if (IsDisposed)
+        {
+            throw new ObjectDisposedException(nameof(NexusClient));
+        }
+
+        return await _engine.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Messaging's path: straight through the engine whatever the dispatcher,
+    /// raising whatever <c>Silent</c> says — a failed send must not look sent —
+    /// but, like the other services, a no-op returning null when switched off.
+    /// </summary>
+    internal async Task<JsonNode?> ExecuteMessagingAsync(NexusRequest request, CancellationToken cancellationToken)
+    {
+        if (SwitchedOff(request.Path))
+        {
+            return null;
         }
 
         if (IsDisposed)

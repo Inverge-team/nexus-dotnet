@@ -79,6 +79,9 @@ public static class NexusServices
     /// <summary>DocStore — the document database.</summary>
     public const string DocStore = "docstore";
 
+    /// <summary>Messaging — WhatsApp, Telegram, SMS sends and OTP verifications.</summary>
+    public const string Messaging = "messaging";
+
     /// <summary>The master switch: <c>NEXUS_ENABLED</c>.</summary>
     public const string AllEnvironmentVariable = "NEXUS_ENABLED";
 
@@ -103,6 +106,7 @@ public static class NexusServices
             [Telescope] = "NEXUS_TELESCOPE_ENABLED",
             [Shield] = "NEXUS_SHIELD_ENABLED",
             [DocStore] = "NEXUS_DOCSTORE_ENABLED",
+            [Messaging] = "NEXUS_MESSAGING_ENABLED",
         };
 
     // The other Nexus SDKs' spellings, so one shared config can drive any of them.
@@ -135,6 +139,7 @@ public static class NexusServices
         ["telescope"] = Telescope,
         ["shield"] = Shield,
         ["docstore"] = DocStore,
+        ["messaging"] = Messaging,
     };
 
     /// <summary>The canonical service name (accepts <c>liveActivities</c> etc.), or null if unknown.</summary>

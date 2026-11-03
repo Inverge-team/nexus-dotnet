@@ -7,6 +7,8 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 ## [1.0.0-rc.8] — 2026-11-04
 
 ### Added
+- `StartVerification.Channels` / `WhatsAppTemplate` / `WhatsAppLanguage`: codes now go out on
+  WhatsApp first, then Telegram (the API's new default); `Channels` sets the order.
 - **Messaging** — send on WhatsApp, Telegram, SMS and the other channels from
   your backend. `client.Messaging.SendAsync(new SendMessage(channel, to) { Body
   | Template + Variables | Content })`, `GetAsync`, `EventsAsync`,

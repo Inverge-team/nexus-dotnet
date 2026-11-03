@@ -43,7 +43,7 @@ public sealed class MessagingResource : NexusResource
         Verifications = new VerificationsResource(client);
     }
 
-    /// <summary>OTP codes over Telegram, with SMS fallback.</summary>
+    /// <summary>OTP codes on WhatsApp first, then Telegram.</summary>
     public VerificationsResource Verifications { get; }
 
     /// <summary>
@@ -186,7 +186,7 @@ public sealed class MessagingResource : NexusResource
     }
 }
 
-/// <summary>One-time codes over Telegram, with SMS fallback.</summary>
+/// <summary>One-time codes on WhatsApp first, then Telegram.</summary>
 public sealed class VerificationsResource : NexusResource
 {
     internal VerificationsResource(NexusClient client) : base(client)
@@ -204,6 +204,9 @@ public sealed class VerificationsResource : NexusResource
         Guard.NotBlank(verification.To, nameof(verification.To));
         var body = JsonBody.Create()
             .Set("to", verification.To)
+            .SetStrings("channels", verification.Channels)
+            .Set("whatsappTemplate", verification.WhatsAppTemplate)
+            .Set("whatsappLanguage", verification.WhatsAppLanguage)
             .Set("codeLength", verification.CodeLength)
             .Set("ttl", verification.Ttl)
             .Set("fallback", verification.SmsFallback ? "sms" : null)

@@ -88,16 +88,29 @@ public sealed class StartVerification
     /// <summary>E.164.</summary>
     public string To { get; }
 
+    /// <summary>
+    /// Channels to try, in order (<c>whatsapp</c>, <c>telegram</c>, <c>sms</c>). Default: WhatsApp,
+    /// then Telegram — the code moves on when a channel refuses it or hasn't delivered it within
+    /// <see cref="FallbackAfter"/>.
+    /// </summary>
+    public IReadOnlyList<string>? Channels { get; init; }
+
+    /// <summary>WhatsApp authentication template to send (default: the platform's).</summary>
+    public string? WhatsAppTemplate { get; init; }
+
+    /// <summary>The template's language, e.g. <c>en_US</c>, <c>ar</c>.</summary>
+    public string? WhatsAppLanguage { get; init; }
+
     /// <summary>Digits in the code (4–8).</summary>
     public int? CodeLength { get; init; }
 
     /// <summary>Seconds the code stays valid.</summary>
     public int? Ttl { get; init; }
 
-    /// <summary>Send the same code by SMS if Telegram cannot deliver it.</summary>
+    /// <summary>Also try SMS last (only where SMS is available).</summary>
     public bool SmsFallback { get; init; }
 
-    /// <summary>Seconds to wait for Telegram delivery before falling back to SMS.</summary>
+    /// <summary>Seconds each channel gets to deliver before the next is tried.</summary>
     public int? FallbackAfter { get; init; }
 
     /// <summary>The SMS sender for the fallback.</summary>

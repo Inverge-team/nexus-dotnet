@@ -161,6 +161,22 @@ public class MessagingTests
     }
 
     [Fact]
+    public async Task Start_carries_the_channel_plan_and_template()
+    {
+        var (client, transport) = TestClient.Create(_ => RecordingTransport.Json(201, """{"id":"ver_2"}"""));
+        await using var __ = client;
+
+        await client.Messaging.Verifications.StartAsync(new StartVerification("+9647501234567")
+        {
+            Channels = new[] { "telegram", "whatsapp" },
+            WhatsAppTemplate = "acme_login",
+            WhatsAppLanguage = "ar",
+        });
+
+        AssertJson("""{"to":"+9647501234567","channels":["telegram","whatsapp"],"whatsappTemplate":"acme_login","whatsappLanguage":"ar"}""", transport.Single().Body);
+    }
+
+    [Fact]
     public async Task A_check_reports_validity()
     {
         var (client, _) = TestClient.Create(_ => RecordingTransport.Json(200, """{"id":"ver_1","status":"approved","valid":true,"attemptsRemaining":4}"""));

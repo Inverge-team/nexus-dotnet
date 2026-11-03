@@ -48,6 +48,28 @@ public sealed class NexusRequest
         Retryable = retryable;
     }
 
+    /// <summary>
+    /// A request whose body is raw bytes (a file upload) rather than JSON,
+    /// sent with <paramref name="contentType"/>.
+    /// </summary>
+    public NexusRequest(
+        string method,
+        string path,
+        byte[] rawBody,
+        string contentType,
+        IReadOnlyDictionary<string, string>? headers = null,
+        bool retryable = false)
+        : this(method, path, (JsonObject?)null, headers, retryable)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+        {
+            throw new ArgumentException("A content type is required for a raw body.", nameof(contentType));
+        }
+
+        RawBody = rawBody ?? throw new ArgumentNullException(nameof(rawBody));
+        ContentType = contentType;
+    }
+
     /// <summary>The HTTP method, upper-cased.</summary>
     public string Method { get; }
 
@@ -62,6 +84,12 @@ public sealed class NexusRequest
 
     /// <summary>Whether a failed attempt may be repeated.</summary>
     public bool Retryable { get; }
+
+    /// <summary>The raw body of an upload; <see langword="null"/> for JSON requests.</summary>
+    public byte[]? RawBody { get; }
+
+    /// <summary>The media type of <see cref="RawBody"/>.</summary>
+    public string? ContentType { get; }
 
     /// <summary>The body as compact JSON — useful in assertions and logs.</summary>
     public string BodyJson() => Body?.ToJsonString() ?? string.Empty;

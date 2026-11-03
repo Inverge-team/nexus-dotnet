@@ -84,7 +84,7 @@ internal sealed class HttpEngine : IDisposable
     private async Task<JsonNode?> ExecuteCoreAsync(NexusRequest request, CancellationToken cancellationToken)
     {
         var url = _options.UrlFor(request.Path);
-        var body = Encode(request.Body);
+        var body = request.RawBody ?? Encode(request.Body);
         var headers = BuildHeaders(request, body is not null);
         var attempts = request.Retryable ? 1 + Math.Max(0, _options.MaxRetries) : 1;
 
@@ -160,7 +160,7 @@ internal sealed class HttpEngine : IDisposable
 
         if (hasBody)
         {
-            headers["Content-Type"] = "application/json";
+            headers["Content-Type"] = request.ContentType ?? "application/json";
         }
 
         return headers;

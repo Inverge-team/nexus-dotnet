@@ -303,6 +303,57 @@ internal static class Payloads
                 .Build(),
             retryable: false);
 
+    // ── Messaging ──────────────────────────────────────────────────────────
+    //
+    // Send-only by product rule: API keys send messages, read what happened to
+    // them, upload a file to attach, and run OTP verifications. Templates,
+    // numbers, webhooks, campaigns and the inbox are managed in the console.
+
+    /// <summary>Always carries an Idempotency-Key, so the send is safe to retry.</summary>
+    public static NexusRequest MessagingSend(JsonObject body, string idempotencyKey)
+        => new NexusRequest(
+            "POST",
+            "/partner/messaging/messages",
+            body,
+            new Dictionary<string, string> { ["Idempotency-Key"] = idempotencyKey },
+            retryable: true);
+
+    public static NexusRequest MessagingGet(string messageId)
+        => new NexusRequest("GET", "/partner/messaging/messages/" + Uri.EscapeDataString(messageId), retryable: true);
+
+    public static NexusRequest MessagingEvents(string messageId)
+        => new NexusRequest("GET", "/partner/messaging/messages/" + Uri.EscapeDataString(messageId) + "/events", retryable: true);
+
+    public static NexusRequest MessagingUploadMedia(byte[] bytes, string contentType, string? filename)
+        => new NexusRequest("POST", WithFilename("/partner/messaging/media", filename), bytes, contentType);
+
+    public static NexusRequest MessagingUploadTelegram(byte[] bytes, string contentType, string? filename)
+        => new NexusRequest("POST", WithFilename("/partner/messaging/telegram/uploads", filename), bytes, contentType);
+
+    // Start and check are never retried: a repeated start sends the user a
+    // second code, and a repeated check spends one of their attempts.
+    public static NexusRequest VerificationStart(JsonObject body)
+        => new NexusRequest("POST", "/partner/messaging/verifications", body);
+
+    public static NexusRequest VerificationGet(string id)
+        => new NexusRequest("GET", "/partner/messaging/verifications/" + Uri.EscapeDataString(id), retryable: true);
+
+    public static NexusRequest VerificationCheck(string id, string code)
+        => new NexusRequest(
+            "POST",
+            "/partner/messaging/verifications/" + Uri.EscapeDataString(id) + "/check",
+            JsonBody.Create().Set("code", code).Build());
+
+    public static NexusRequest VerificationCancel(string id)
+        => new NexusRequest(
+            "POST",
+            "/partner/messaging/verifications/" + Uri.EscapeDataString(id) + "/cancel",
+            new JsonObject(),
+            retryable: true);
+
+    private static string WithFilename(string path, string? filename)
+        => string.IsNullOrEmpty(filename) ? path : path + "?filename=" + Uri.EscapeDataString(filename);
+
     // ── Surveys ────────────────────────────────────────────────────────────
 
     public static NexusRequest SurveysActive(

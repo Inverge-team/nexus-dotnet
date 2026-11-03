@@ -4,6 +4,25 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.8] — 2026-11-04
+
+### Added
+- **Messaging** — send on WhatsApp, Telegram, SMS and the other channels from
+  your backend. `client.Messaging.SendAsync(new SendMessage(channel, to) { Body
+  | Template + Variables | Content })`, `GetAsync`, `EventsAsync`,
+  `UploadMediaAsync` (WhatsApp) and `UploadTelegramFileAsync` (bytes or a
+  path); OTP codes over Telegram with SMS fallback via
+  `client.Messaging.Verifications.StartAsync/CheckAsync/GetAsync/CancelAsync`.
+  Typed results (`MessageSendResult`, `MessageInfo`, `MessageEvent`,
+  `MessagingUpload`, `Verification`), each with `Raw`.
+  - Every send carries an `Idempotency-Key` (generated, or `IdempotencyKey`),
+    so it is retried safely; verification start/check are never retried.
+  - Always direct and always throwing (`NexusApiException.Code`), whatever the
+    dispatcher or `Silent` — a failed send must not look sent. Not on
+    `INexusClient`, so existing implementers keep compiling.
+  - New switch `NexusServices.Messaging` / `NEXUS_MESSAGING_ENABLED`.
+  - `NexusRequest` can carry a raw body (`RawBody` + `ContentType`) for uploads.
+
 ## [1.0.0-rc.7] — 2026-10-28
 
 ### Added

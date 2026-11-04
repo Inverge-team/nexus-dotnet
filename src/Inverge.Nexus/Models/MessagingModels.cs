@@ -89,8 +89,8 @@ public sealed class StartVerification
     public string To { get; }
 
     /// <summary>
-    /// Channels to try, in order (<c>whatsapp</c>, <c>telegram</c>, <c>sms</c>). Default: WhatsApp,
-    /// then Telegram — the code moves on when a channel refuses it or hasn't delivered it within
+    /// Channels to try, in order (<c>whatsapp</c>, <c>telegram</c>, <c>sms</c>). Default: WhatsApp and
+    /// Telegram, the cheaper for the number first — the code moves on when a channel refuses it or hasn't delivered it within
     /// <see cref="FallbackAfter"/>.
     /// </summary>
     public IReadOnlyList<string>? Channels { get; init; }

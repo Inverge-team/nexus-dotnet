@@ -43,7 +43,7 @@ public sealed class MessagingResource : NexusResource
         Verifications = new VerificationsResource(client);
     }
 
-    /// <summary>OTP codes on WhatsApp first, then Telegram.</summary>
+    /// <summary>OTP codes on WhatsApp or Telegram, cheapest first.</summary>
     public VerificationsResource Verifications { get; }
 
     /// <summary>
@@ -186,7 +186,7 @@ public sealed class MessagingResource : NexusResource
     }
 }
 
-/// <summary>One-time codes on WhatsApp first, then Telegram.</summary>
+/// <summary>One-time codes on WhatsApp or Telegram, whichever is cheaper for the number.</summary>
 public sealed class VerificationsResource : NexusResource
 {
     internal VerificationsResource(NexusClient client) : base(client)

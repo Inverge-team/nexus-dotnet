@@ -97,6 +97,95 @@ public class BuilderTests
     }
 
     [Fact]
+    public void When_and_Unless_branch_without_leaving_the_chain()
+    {
+        var (client, _) = TestClient.Create();
+        var ids = new List<string>();
+        string? missing = null;
+
+        var body = client.Push.Notification()
+            .Title("Hi")
+            .When("https://cdn.test/a.png", (p, url) => p.Image(url))
+            .When(missing, (p, v) => p.Body("never"))
+            .When(ids, (p, v) => p.ToUsers(v), p => p.ToSegment("All Clients"))
+            .When(ids.Count == 0, p => p.IosBadge(1))
+            .Unless(true, p => p.Body("never"))
+            .Body((string?)null)               // an absent optional value is a no-op
+            .Build();
+
+        Assert.Equal("https://cdn.test/a.png", body["imageUrl"]!.ToString());
+        Assert.False(body.ContainsKey("body"));
+        Assert.False(body.ContainsKey("distinctIds"));
+        Assert.Equal("All Clients", body["segmentIds"]![0]!.ToString());
+        Assert.Equal(1, body["options"]!["iosBadge"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task Title_and_Body_take_one_text_per_language()
+    {
+        var (client, _) = TestClient.Create();
+
+        var body = client.Push.Notification()
+            .Title(new Dictionary<string, string> { ["en"] = "Your order shipped", ["ar"] = "تم شحن طلبك", ["ckb"] = "" })
+            .Body(new Dictionary<string, string> { ["en"] = "Track it in the app", ["ar"] = "", ["ckb"] = "بەدوایدا بچۆ" })
+            .ToUser("u1")
+            .Build();
+
+        Assert.Equal("Your order shipped", body["title"]!.ToString());
+        Assert.Equal("Track it in the app", body["body"]!.ToString());
+        Assert.Equal("en", body["defaultLanguage"]!.ToString());
+        var l = body["localizations"]!;
+        Assert.Equal("تم شحن طلبك", l["ar"]!["title"]!.ToString());
+        Assert.Equal("Track it in the app", l["ar"]!["body"]!.ToString());   // empty → default's
+        Assert.Equal("Your order shipped", l["ckb"]!["title"]!.ToString());  // empty → default's
+        Assert.Equal("بەدوایدا بچۆ", l["ckb"]!["body"]!.ToString());
+
+        var d = client.Push.Notification()
+            .Title(new Dictionary<string, string> { ["ar"] = "مرحبا", ["ckb"] = "سڵاو" })
+            .DefaultLanguage("ckb").ToUser("u").Build();
+        Assert.Equal("سڵاو", d["title"]!.ToString());
+        Assert.Equal("ckb", d["defaultLanguage"]!.ToString());
+
+        var plain = client.Push.Notification().Title("Hi").ToUser("u").Build();
+        Assert.False(plain.ContainsKey("localizations"));
+        Assert.False(plain.ContainsKey("defaultLanguage"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => client.Push.Notification()
+            .Title(new Dictionary<string, string> { ["en"] = "" }).ToUser("u").SendAsync());
+    }
+
+    [Fact]
+    public async Task SendAt_schedules_with_an_absolute_instant_and_can_be_canceled()
+    {
+        var (client, transport) = TestClient.Create(
+            _ => RecordingTransport.Json(200, """{"id":"c1","status":"scheduled","scheduledAt":"2026-11-07T09:00:00.000Z","sentAt":null,"recipients":0,"sent":0,"failed":0}"""));
+        await using var _ = client;
+
+        var result = await client.Push.Notification()
+            .Title("Hi")
+            .ToUser("user_1")
+            .Name("Morning")
+            .ScheduleAsync(new DateTimeOffset(2026, 11, 7, 12, 0, 0, TimeSpan.FromHours(3)));
+
+        Assert.True(result.IsScheduled);
+        Assert.Equal("c1", result.ScheduledId);
+        var body = transport.Last.Object;
+        Assert.Equal("2026-11-07T09:00:00Z", body["sendAt"]!.ToString());
+        Assert.Equal("Morning", body["name"]!.ToString());
+
+        var scheduled = await client.Push.ScheduledAsync("c/1");
+        Assert.Equal("GET", transport.Last.Method);
+        Assert.Equal("/partner/push/scheduled/c%2F1", transport.Last.Path);
+        Assert.Equal("scheduled", scheduled.Status);
+
+        await client.Push.CancelScheduledAsync("c1");
+        Assert.Equal("POST", transport.Last.Method);
+        Assert.Equal("/partner/push/scheduled/c1/cancel", transport.Last.Path);
+
+        Assert.False(client.Push.Notification().Title("t").ToUser("u").SendAt(null).Build().ContainsKey("sendAt"));
+    }
+
+    [Fact]
     public async Task The_live_activity_builder_starts_updates_and_ends()
     {
         var (client, transport) = TestClient.Create(

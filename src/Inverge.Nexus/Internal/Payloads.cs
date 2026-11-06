@@ -399,6 +399,20 @@ internal static class Payloads
     public static NexusRequest PushSend(JsonObject payload)
         => new NexusRequest("POST", "/partner/push/send", payload);
 
+    public static NexusRequest PushScheduled(string id)
+        => new NexusRequest("GET", "/partner/push/scheduled/" + Seg(id), retryable: true);
+
+    // Not retried: a retry after a lost reply would 409 on the already-canceled send.
+    public static NexusRequest PushCancelScheduled(string id)
+        => new NexusRequest("POST", "/partner/push/scheduled/" + Seg(id) + "/cancel", new JsonObject());
+
+    /// <summary>
+    /// The <c>sendAt</c> wire value — always an absolute UTC instant, so the
+    /// server never has to guess a time zone.
+    /// </summary>
+    public static string SendAtValue(DateTimeOffset at)
+        => at.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
+
     public static NexusRequest PushRegister(
         NexusTelemetryContext context,
         string token,

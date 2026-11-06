@@ -157,7 +157,21 @@ public sealed class PushSendResult : NexusResult
         Sent = raw.Int("sent");
         Failed = raw.Int("failed");
         Recipients = raw.Int("recipients");
+        ScheduledId = raw.Str("id");
+        ScheduledAt = raw.Timestamp("scheduledAt");
     }
+
+    /// <summary>
+    /// Set when the builder had <c>SendAt()</c>: the scheduled send's id, for
+    /// <c>ScheduledAsync</c> / <c>CancelScheduledAsync</c>. Null for an immediate send.
+    /// </summary>
+    public string? ScheduledId { get; }
+
+    /// <summary>When a scheduled send goes out. Null for an immediate send.</summary>
+    public DateTimeOffset? ScheduledAt { get; }
+
+    /// <summary>Whether this was scheduled rather than sent now (the counts are then 0).</summary>
+    public bool IsScheduled => ScheduledId is not null;
 
     /// <summary>How many device deliveries the providers accepted.</summary>
     public int Sent { get; }
@@ -173,6 +187,44 @@ public sealed class PushSendResult : NexusResult
     public int Recipients { get; }
 
     internal static PushSendResult From(JsonNode? raw) => new PushSendResult(raw);
+}
+
+/// <summary>A push scheduled for later, and its outcome once it has fired.</summary>
+public sealed class PushScheduledSend : NexusResult
+{
+    private PushScheduledSend(JsonNode? raw) : base(raw)
+    {
+        Id = raw.Str("id") ?? string.Empty;
+        Status = raw.Str("status") ?? string.Empty;
+        ScheduledAt = raw.Timestamp("scheduledAt");
+        SentAt = raw.Timestamp("sentAt");
+        Recipients = raw.Int("recipients");
+        Sent = raw.Int("sent");
+        Failed = raw.Int("failed");
+    }
+
+    /// <summary>The scheduled send's id.</summary>
+    public string Id { get; }
+
+    /// <summary><c>scheduled</c>, <c>sending</c>, <c>sent</c>, <c>failed</c> or <c>canceled</c>.</summary>
+    public string Status { get; }
+
+    /// <summary>When it goes (or went) out.</summary>
+    public DateTimeOffset? ScheduledAt { get; }
+
+    /// <summary>When it finished sending; null until then.</summary>
+    public DateTimeOffset? SentAt { get; }
+
+    /// <summary>How many devices the audience resolved to — filled in once sent.</summary>
+    public int Recipients { get; }
+
+    /// <summary>Deliveries the providers accepted — filled in once sent.</summary>
+    public int Sent { get; }
+
+    /// <summary>Deliveries the providers rejected — filled in once sent.</summary>
+    public int Failed { get; }
+
+    internal static PushScheduledSend From(JsonNode? raw) => new PushScheduledSend(raw);
 }
 
 /// <summary>How many devices a Live Activity reached, per platform.</summary>

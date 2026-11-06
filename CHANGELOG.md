@@ -4,6 +4,24 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.9] — 2026-11-06
+
+### Added
+- **Scheduled push**: `SendAt(DateTimeOffset?)`, `ScheduleAsync(at)` and `Name()` on
+  `PushNotificationBuilder`; `PushSendResult.IsScheduled` / `ScheduledId` /
+  `ScheduledAt`. `Push.ScheduledAsync(id)` and `Push.CancelScheduledAsync(id)`
+  return the new `PushScheduledSend`.
+- **`When()` / `Unless()`** on the push builder: `When(bool, then, otherwise)` and
+  `When<T>(value, (p, v) => …, otherwise)` (null, false, zero, "" and empty
+  collections are falsy).
+- **Per-language push**: `Title(IReadOnlyDictionary<string, string>)` /
+  `Body(IReadOnlyDictionary<string, string>)` and `DefaultLanguage(lang)`; each
+  device gets its language's, empty translations fall back to the default
+  language (else `en`, else the first given).
+
+### Changed
+- `Body(null)` / `Image(null)` leave the field unset.
+
 ## [1.0.0-rc.8] — 2026-11-04
 
 ### Added

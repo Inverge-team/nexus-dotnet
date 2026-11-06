@@ -123,6 +123,34 @@ public sealed class PushResource : NexusResource
     }
 
     /// <summary>
+    /// A send scheduled with <c>SendAt()</c> — its status, and the counts once it
+    /// has fired.
+    /// </summary>
+    /// <param name="id">The <see cref="PushSendResult.ScheduledId"/>.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    public async Task<PushScheduledSend> ScheduledAsync(string id, CancellationToken cancellationToken = default)
+    {
+        Guard.NotBlank(id, nameof(id));
+
+        var response = await SendAsync(Payloads.PushScheduled(id), cancellationToken).ConfigureAwait(false);
+        return PushScheduledSend.From(response);
+    }
+
+    /// <summary>Cancels a scheduled send before it fires.</summary>
+    /// <remarks>
+    /// The API answers 409 once it has started sending and 404 for an unknown id.
+    /// </remarks>
+    /// <param name="id">The <see cref="PushSendResult.ScheduledId"/>.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    public async Task<PushScheduledSend> CancelScheduledAsync(string id, CancellationToken cancellationToken = default)
+    {
+        Guard.NotBlank(id, nameof(id));
+
+        var response = await SendAsync(Payloads.PushCancelScheduled(id), cancellationToken).ConfigureAwait(false);
+        return PushScheduledSend.From(response);
+    }
+
+    /// <summary>
     /// Registers or refreshes a device token.
     /// </summary>
     /// <remarks>

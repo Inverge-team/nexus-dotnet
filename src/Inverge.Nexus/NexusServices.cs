@@ -82,6 +82,9 @@ public static class NexusServices
     /// <summary>Messaging — WhatsApp, Telegram, SMS sends and OTP verifications.</summary>
     public const string Messaging = "messaging";
 
+    /// <summary>Push Authentication — push + silent device approval.</summary>
+    public const string PushAuth = "push_auth";
+
     /// <summary>The master switch: <c>NEXUS_ENABLED</c>.</summary>
     public const string AllEnvironmentVariable = "NEXUS_ENABLED";
 
@@ -107,6 +110,7 @@ public static class NexusServices
             [Shield] = "NEXUS_SHIELD_ENABLED",
             [DocStore] = "NEXUS_DOCSTORE_ENABLED",
             [Messaging] = "NEXUS_MESSAGING_ENABLED",
+            [PushAuth] = "NEXUS_PUSH_AUTH_ENABLED",
         };
 
     // The other Nexus SDKs' spellings, so one shared config can drive any of them.
@@ -140,6 +144,7 @@ public static class NexusServices
         ["shield"] = Shield,
         ["docstore"] = DocStore,
         ["messaging"] = Messaging,
+        ["push-auth"] = PushAuth,
     };
 
     /// <summary>The canonical service name (accepts <c>liveActivities</c> etc.), or null if unknown.</summary>

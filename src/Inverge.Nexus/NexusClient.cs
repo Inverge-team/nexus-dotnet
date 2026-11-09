@@ -153,6 +153,7 @@ public sealed class NexusClient : INexusClient
         Voice = new VoiceResource(this);
         Shield = new ShieldResource(this);
         Messaging = new MessagingResource(this);
+        PushAuth = new PushAuthResource(this);
     }
 
     /// <inheritdoc />
@@ -191,6 +192,13 @@ public sealed class NexusClient : INexusClient
     /// break implementers); always direct and always throwing on failure.
     /// </summary>
     public MessagingResource Messaging { get; }
+
+    /// <summary>
+    /// Push Authentication — approve sign-ins and transactions on the user's phone
+    /// (match the number, tap, code display, silent). The API key must be granted
+    /// Push Authentication server access in the console.
+    /// </summary>
+    public PushAuthResource PushAuth { get; }
 
     /// <inheritdoc />
     public SurveysResource Surveys { get; }

@@ -207,6 +207,7 @@ public sealed class VerificationsResource : NexusResource
             .SetStrings("channels", verification.Channels)
             .Set("whatsappTemplate", verification.WhatsAppTemplate)
             .Set("whatsappLanguage", verification.WhatsAppLanguage)
+            .Set("whatsappSender", verification.WhatsAppSender)
             .Set("codeLength", verification.CodeLength)
             .Set("ttl", verification.Ttl)
             .Set("fallback", verification.SmsFallback ? "sms" : null)

@@ -102,7 +102,7 @@ internal sealed class HttpEngine : IDisposable
             try
             {
                 response = await _transport
-                    .SendAsync(request.Method, url, headers, body, _options.Timeout, cancellationToken)
+                    .SendAsync(request.Method, url, headers, body, request.Timeout ?? _options.Timeout, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (NexusTransportException exception)

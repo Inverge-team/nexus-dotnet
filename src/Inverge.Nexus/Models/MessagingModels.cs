@@ -45,7 +45,13 @@ public sealed class SendMessage
     /// </summary>
     public object? Content { get; init; }
 
-    /// <summary>A registered sender (SMS sender ID, Telegram bot <c>@username</c>). Optional on WhatsApp.</summary>
+    /// <summary>
+    /// Which of your connected accounts sends it; omit for the channel's default.
+    /// WhatsApp: the number in any format (<c>+9647501234567</c>) or its phone number id.
+    /// Telegram: the bot's <c>@username</c>. Messenger: the Facebook Page id or name.
+    /// Instagram: the account id or <c>@username</c>. Viber: the bot's name or URI.
+    /// SMS: an approved sender ID.
+    /// </summary>
     public string? Sender { get; init; }
 
     /// <summary>An approved template by name.</summary>
@@ -100,6 +106,9 @@ public sealed class StartVerification
 
     /// <summary>The template's language, e.g. <c>en_US</c>, <c>ar</c>.</summary>
     public string? WhatsAppLanguage { get; init; }
+
+    /// <summary>Which of your WhatsApp numbers sends the code: the number in any format, or its phone number id. Default: the project's default number.</summary>
+    public string? WhatsAppSender { get; init; }
 
     /// <summary>Digits in the code (4–8).</summary>
     public int? CodeLength { get; init; }

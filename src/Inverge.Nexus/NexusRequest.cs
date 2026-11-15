@@ -91,6 +91,12 @@ public sealed class NexusRequest
     /// <summary>The media type of <see cref="RawBody"/>.</summary>
     public string? ContentType { get; }
 
+    /// <summary>
+    /// Overrides the client's per-request timeout (a long-poll waits server-side
+    /// before it answers). <see langword="null"/> = <see cref="NexusOptions.Timeout"/>.
+    /// </summary>
+    public TimeSpan? Timeout { get; set; }
+
     /// <summary>The body as compact JSON — useful in assertions and logs.</summary>
     public string BodyJson() => Body?.ToJsonString() ?? string.Empty;
 

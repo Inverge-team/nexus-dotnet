@@ -125,9 +125,12 @@ internal sealed class BackgroundDispatcher : INexusDispatcher, IDisposable
         if (workers.Count > 0)
         {
             var all = Task.WhenAll(workers);
+            // Cancel the timer once the race is decided so it doesn't outlive the drain.
+            using var delayCts = new CancellationTokenSource();
             var finished = await Task
-                .WhenAny(all, Task.Delay(timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(1) : timeout))
+                .WhenAny(all, Task.Delay(timeout <= TimeSpan.Zero ? TimeSpan.FromSeconds(1) : timeout, delayCts.Token))
                 .ConfigureAwait(false);
+            delayCts.Cancel();
 
             if (finished != all)
             {

@@ -195,9 +195,12 @@ internal sealed class BatchQueue : IDisposable
 
         if (worker is not null && !worker.IsCompleted)
         {
+            // Cancel the timer once the race is decided so it doesn't outlive the drain.
+            using var delayCts = new CancellationTokenSource();
             var finished = await Task
-                .WhenAny(worker, Task.Delay(timeout <= TimeSpan.Zero ? TimeSpan.Zero : timeout))
+                .WhenAny(worker, Task.Delay(timeout <= TimeSpan.Zero ? TimeSpan.Zero : timeout, delayCts.Token))
                 .ConfigureAwait(false);
+            delayCts.Cancel();
 
             if (finished != worker)
             {

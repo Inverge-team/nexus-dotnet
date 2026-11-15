@@ -107,6 +107,9 @@ public sealed class StartVerification
     /// <summary>The template's language, e.g. <c>en_US</c>, <c>ar</c>.</summary>
     public string? WhatsAppLanguage { get; init; }
 
+    /// <summary>Which of your WhatsApp numbers sends the code: the number in any format, or its phone number id. Default: the project's default number.</summary>
+    public string? WhatsAppSender { get; init; }
+
     /// <summary>Digits in the code (4–8).</summary>
     public int? CodeLength { get; init; }
 

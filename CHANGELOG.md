@@ -4,6 +4,26 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.12] — 2026-11-22
+
+### Changed — Live Activities are delivered asynchronously
+- `StartAsync` / `UpdateAsync` / `EndAsync` (resource and builder) are accepted
+  at once (HTTP 202) and Nexus delivers them in the background — per-push
+  timeouts, retries, strict order per activity — so a call never waits on Apple
+  or Google and no longer times out when they're slow. `LiveActivityResult` now
+  carries `Accepted`, `JobId`, `ActivityId`, `Status`; its device counts
+  (`Ios`, `Android`, `IosTargets`, `IosWarning`, `Total`) are `[Obsolete]` and
+  always empty.
+
+### Added
+- `LiveActivities.GetJobAsync(jobId)` → `LiveActivityJob`: `Status`,
+  `Attempts`, `LastError`, and the devices reached (`Ios`, `Android`, `Total`,
+  `IosTargets`, `IosWarning`).
+
+### Fixed
+- A repeated start for an activity a user already has now updates it instead
+  of starting a second one, so retrying a start is safe.
+
 ## [1.0.0-rc.11] — 2026-11-22
 
 ### Added

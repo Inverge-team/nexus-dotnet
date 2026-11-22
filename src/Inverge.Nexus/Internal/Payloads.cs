@@ -594,6 +594,9 @@ internal static class Payloads
                 .SetAny("contentState", contentState)
                 .Build());
 
+    public static NexusRequest LiveActivityJob(string jobId)
+        => new NexusRequest("GET", "/partner/live-activities/jobs/" + Seg(jobId), retryable: true);
+
     public static NexusRequest LiveActivityEvent(string activityId, string type, string? platform)
         => new NexusRequest(
             "POST",

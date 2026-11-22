@@ -21,6 +21,13 @@ namespace Inverge.Nexus.Resources;
 /// the order or ride or match begins, update as it changes, end when it is done.
 /// iOS additionally needs the APNs key configured in the console — Live Activities
 /// cannot go through FCM — and a Widget Extension in the app.
+/// <para>
+/// Start, update and end are accepted at once (HTTP 202) and delivered by Nexus
+/// in the background — per-push timeouts, retries, strict order per activity —
+/// so a call never waits on Apple or Google. Each returns the accepted job;
+/// <see cref="GetJobAsync"/> reports the outcome. A repeated start for an
+/// activity a user already has updates it instead, so retrying a start is safe.
+/// </para>
 /// </remarks>
 public sealed class LiveActivitiesResource : NexusResource
 {
@@ -234,6 +241,14 @@ public sealed class LiveActivitiesResource : NexusResource
             cancellationToken).ConfigureAwait(false);
 
         return LiveActivityResult.From(response);
+    }
+
+    /// <summary>The outcome of a queued start / update / end.</summary>
+    public async Task<LiveActivityJob> GetJobAsync(string jobId, CancellationToken cancellationToken = default)
+    {
+        Guard.NotBlank(jobId, nameof(jobId));
+        var response = await SendAsync(Payloads.LiveActivityJob(jobId), cancellationToken).ConfigureAwait(false);
+        return LiveActivityJob.From(response);
     }
 
     /// <summary>Registers an iOS push-to-start token. Normally the device SDK's job.</summary>

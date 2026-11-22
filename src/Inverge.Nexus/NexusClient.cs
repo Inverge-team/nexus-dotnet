@@ -305,9 +305,21 @@ public sealed class NexusClient : INexusClient
             return null;
         }
 
+        // Billing suspension: telemetry is dropped before it is even queued;
+        // anything else reaches the engine, which refuses it without a request.
+        var telemetry = IsTelemetry(request.Path);
+        if (telemetry && _engine.Suspension.Remaining(request.Path) > TimeSpan.Zero)
+        {
+            return null;
+        }
+
         try
         {
             return await _dispatcher.DispatchAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (NexusBillingSuspendedException) when (telemetry || _options.Silent)
+        {
+            return null;
         }
         catch (NexusException exception) when (_options.Silent)
         {
@@ -465,6 +477,20 @@ public sealed class NexusClient : INexusClient
     private readonly ConcurrentDictionary<string, bool> _skipped = new ConcurrentDictionary<string, bool>(StringComparer.Ordinal);
 
     /// <summary>A switched-off service is a no-op: no request, no exception, a neutral result.</summary>
+    /// <summary>Fire-and-forget services: dropped quietly while billing is suspended.</summary>
+    private static bool IsTelemetry(string path)
+    {
+        var service = NexusServices.ForPath(path);
+        return service == NexusServices.Events || service == NexusServices.Errors || service == NexusServices.Logs
+            || service == NexusServices.Telescope || service == NexusServices.Replay;
+    }
+
+    /// <summary>
+    /// Lifts this client's billing-suspension pause at once — e.g. right after
+    /// settling an invoice — instead of waiting for the next check.
+    /// </summary>
+    public void ResetBillingSuspension() => _engine.Suspension.Reset();
+
     private bool SwitchedOff(string path)
     {
         var service = NexusServices.ForPath(path);

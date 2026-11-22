@@ -74,8 +74,8 @@ public class RetryTests
             Fast);
         await using var _ = client;
 
-        await Assert.ThrowsAsync<NexusBillingSuspendedException>(
-            () => client.Events.BatchAsync(new[] { new NexusEvent("a") }));
+        // Telemetry is dropped quietly while suspended (see BillingSuspensionTests).
+        Assert.Equal(0, await client.Events.BatchAsync(new[] { new NexusEvent("a") }));
 
         Assert.Equal(1, transport.Count);
     }

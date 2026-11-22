@@ -214,6 +214,10 @@ internal sealed class BackgroundDispatcher : INexusDispatcher, IDisposable
                 {
                     await _engine.ExecuteAsync(request, CancellationToken.None).ConfigureAwait(false);
                 }
+                catch (NexusBillingSuspendedException)
+                {
+                    // Paused — the engine already warned once.
+                }
                 catch (Exception exception)
                 {
                     _diagnostics.Warning(

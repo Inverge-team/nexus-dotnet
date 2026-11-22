@@ -4,6 +4,25 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.11] — 2026-11-22
+
+### Added
+- **Billing suspension stops all calls.** After one `402 billing_suspended` a
+  client sends nothing for the pause the API asks for (`details.retryAfterSeconds`,
+  default 5 minutes): telemetry is dropped, other calls throw
+  `NexusBillingSuspendedException` with `IsLocal` (and `RetryAfter`) without a
+  request. When the pause ends one probe goes out; a refusal starts a new pause,
+  success resumes. `NexusClient.ResetBillingSuspension()` lifts it at once.
+- `NexusDeliveryFailure.Is(exception)`; `Errors.CaptureExceptionAsync` (and so
+  the ASP.NET Core middleware and the logger bridge) never reports the SDK's own
+  failure to reach Nexus.
+
+### Changed
+- Telemetry (`Events`, `Logs`, `Errors`, Telescope, replay) returns its neutral
+  value instead of throwing while suspended.
+- A `402 insufficient_balance` (empty Messaging wallet) is a plain
+  `NexusApiException`, no longer `NexusBillingSuspendedException`.
+
 ## [1.0.0-rc.9] — 2026-11-06
 
 ### Added

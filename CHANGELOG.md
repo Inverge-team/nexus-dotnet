@@ -4,6 +4,18 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.13] — 2026-11-23
+
+### Added — Messaging forwards your end user's IP
+- `Verifications.StartAsync` and sends with `MessageClass = "otp"` send the
+  request's client IP as `X-Client-IP`, for the per-IP rate limit. `UseNexus()`
+  binds `HttpContext.Connection.RemoteIpAddress` (put `UseForwardedHeaders()`
+  first behind a proxy); it flows into `Task.Run`. For queued jobs, carry
+  `NexusClientIp.Current` and wrap the work in `NexusClientIp.Use(ip)`.
+- `StartVerification.ClientIp` overrides it. `NexusClientIp.Enabled = false` or
+  `NEXUS_FORWARD_CLIENT_IP=false` turns it off. Private and proxy addresses are
+  never sent.
+
 ## [1.0.0-rc.12] — 2026-11-22
 
 ### Changed — Live Activities are delivered asynchronously

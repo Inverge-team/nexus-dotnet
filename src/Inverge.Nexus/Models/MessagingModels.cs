@@ -136,6 +136,12 @@ public sealed class StartVerification
 
     /// <summary>Echoed back on reads.</summary>
     public object? Metadata { get; init; }
+
+    /// <summary>
+    /// Your end user's IP, for the per-IP rate limit. Leave it null and the address bound to the
+    /// current request is sent (see <see cref="NexusClientIp"/>).
+    /// </summary>
+    public string? ClientIp { get; init; }
 }
 
 /// <summary>A customer-facing price — a decimal string, never a float.</summary>

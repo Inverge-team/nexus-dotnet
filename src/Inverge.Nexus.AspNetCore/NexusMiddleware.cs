@@ -43,6 +43,10 @@ public sealed class NexusMiddleware
             throw new ArgumentNullException(nameof(context));
         }
 
+        // The end user's address for Messaging's per-IP limit. RemoteIpAddress is
+        // the client once UseForwardedHeaders() has run, never a raw header.
+        using var clientIp = NexusClientIp.Use(context.Connection.RemoteIpAddress?.ToString());
+
         if (IsIgnored(context.Request.Path))
         {
             await _next(context).ConfigureAwait(false);

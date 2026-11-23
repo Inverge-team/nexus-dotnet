@@ -310,13 +310,20 @@ internal static class Payloads
     // numbers, webhooks, campaigns and the inbox are managed in the console.
 
     /// <summary>Always carries an Idempotency-Key, so the send is safe to retry.</summary>
-    public static NexusRequest MessagingSend(JsonObject body, string idempotencyKey)
-        => new NexusRequest(
-            "POST",
-            "/partner/messaging/messages",
-            body,
-            new Dictionary<string, string> { ["Idempotency-Key"] = idempotencyKey },
-            retryable: true);
+    public static NexusRequest MessagingSend(
+        JsonObject body, string idempotencyKey, IReadOnlyDictionary<string, string>? extraHeaders = null)
+    {
+        var headers = new Dictionary<string, string> { ["Idempotency-Key"] = idempotencyKey };
+        if (extraHeaders is not null)
+        {
+            foreach (var pair in extraHeaders)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        return new NexusRequest("POST", "/partner/messaging/messages", body, headers, retryable: true);
+    }
 
     public static NexusRequest MessagingGet(string messageId)
         => new NexusRequest("GET", "/partner/messaging/messages/" + Uri.EscapeDataString(messageId), retryable: true);
@@ -332,8 +339,8 @@ internal static class Payloads
 
     // Start and check are never retried: a repeated start sends the user a
     // second code, and a repeated check spends one of their attempts.
-    public static NexusRequest VerificationStart(JsonObject body)
-        => new NexusRequest("POST", "/partner/messaging/verifications", body);
+    public static NexusRequest VerificationStart(JsonObject body, IReadOnlyDictionary<string, string>? headers = null)
+        => new NexusRequest("POST", "/partner/messaging/verifications", body, headers);
 
     public static NexusRequest VerificationGet(string id)
         => new NexusRequest("GET", "/partner/messaging/verifications/" + Uri.EscapeDataString(id), retryable: true);

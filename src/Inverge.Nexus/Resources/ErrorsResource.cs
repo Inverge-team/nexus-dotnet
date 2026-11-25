@@ -104,6 +104,12 @@ public sealed class ErrorsResource : NexusResource
             throw new ArgumentNullException(nameof(exception));
         }
 
+        if (NexusDeliveryFailure.Is(exception))
+        {
+            // Nexus itself unreachable or suspended — reporting it would loop.
+            return Task.FromResult(ErrorCaptureResult.From(null));
+        }
+
         var frames = new List<NexusStackFrame>(StackFrames(exception));
 
         if (includeInner)

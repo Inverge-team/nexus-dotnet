@@ -39,6 +39,7 @@ internal sealed class HttpEngine : IDisposable
     private readonly INexusTransport _transport;
     private readonly bool _ownsTransport;
     private readonly NexusDiagnostics _diagnostics;
+    private readonly BillingSuspension _suspension = new BillingSuspension();
     private bool _disposed;
 
     public HttpEngine(NexusOptions options, INexusTransport? transport, NexusDiagnostics diagnostics)
@@ -50,6 +51,9 @@ internal sealed class HttpEngine : IDisposable
     }
 
     public NexusOptions Options => _options;
+
+    /// <summary>This client's billing-suspension breaker.</summary>
+    public BillingSuspension Suspension => _suspension;
 
     /// <summary>Executes a request and returns the decoded body.</summary>
     /// <exception cref="NexusApiException">The server answered with a failure.</exception>
@@ -83,6 +87,13 @@ internal sealed class HttpEngine : IDisposable
 
     private async Task<JsonNode?> ExecuteCoreAsync(NexusRequest request, CancellationToken cancellationToken)
     {
+        // Billing suspension: refuse locally, no request, until the pause ends.
+        var paused = _suspension.Begin(request.Path);
+        if (paused > TimeSpan.Zero)
+        {
+            throw BillingSuspension.LocalRefusal(paused, request.Method, request.Path);
+        }
+
         var url = _options.UrlFor(request.Path);
         var body = request.RawBody ?? Encode(request.Body);
         var headers = BuildHeaders(request, body is not null);
@@ -123,11 +134,33 @@ internal sealed class HttpEngine : IDisposable
                 continue;
             }
 
+            Observe(request, response);
             return Parse(request, response);
         }
 
         throw lastFailure ?? new NexusTransportException(
             string.Format(CultureInfo.InvariantCulture, "{0} {1} failed.", request.Method, url));
+    }
+
+    private void Observe(NexusRequest request, NexusTransportResponse response)
+    {
+        string? code = null;
+        JsonNode? details = null;
+        if (response.Status == 402)
+        {
+            var error = response.ReadJson().Obj("error");
+            code = error.Str("code");
+            details = error.Prop("details");
+        }
+
+        var pause = _suspension.Record(request.Path, response.Status, code, details);
+        if (pause is TimeSpan p)
+        {
+            _diagnostics.Warning(
+                null,
+                "API access is suspended for an overdue invoice; pausing every Nexus call for {0}s.",
+                (int)p.TotalSeconds);
+        }
     }
 
     private static byte[]? Encode(JsonObject? body)

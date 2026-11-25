@@ -227,16 +227,119 @@ public sealed class PushScheduledSend : NexusResult
     internal static PushScheduledSend From(JsonNode? raw) => new PushScheduledSend(raw);
 }
 
-/// <summary>How many devices a Live Activity reached, per platform.</summary>
+/// <summary>
+/// A Live Activity start / update / end the API accepted. Delivery is
+/// asynchronous: Nexus sends it in the background — per-push timeouts, retries,
+/// strict order per activity — so the call never waits on Apple or Google. Read
+/// the outcome with <see cref="Resources.LiveActivitiesResource.GetJobAsync"/>.
+/// </summary>
 public sealed class LiveActivityResult : NexusResult
 {
     private LiveActivityResult(JsonNode? raw) : base(raw)
     {
+        Accepted = raw.Flag("accepted");
+        JobId = raw.Str("jobId");
+        ActivityId = raw.Str("activityId");
+        Status = raw.Str("status");
+#pragma warning disable CS0618
         Ios = raw.Int("ios");
         Android = raw.Int("android");
         IosTargets = raw.Int("iosTargets");
         IosWarning = raw.Str("iosWarning");
+#pragma warning restore CS0618
     }
+
+    /// <summary>True when Nexus queued it; false when nothing was sent (the service is switched off).</summary>
+    public bool Accepted { get; }
+
+    /// <summary>The queued job — pass it to <see cref="Resources.LiveActivitiesResource.GetJobAsync"/>.</summary>
+    public string? JobId { get; }
+
+    /// <summary>The activity the job is for.</summary>
+    public string? ActivityId { get; }
+
+    /// <summary><c>pending</c> when just accepted.</summary>
+    public string? Status { get; }
+
+    /// <summary>Always 0 now — delivery is asynchronous; read <see cref="LiveActivityJob.Ios"/>.</summary>
+    [Obsolete("Live Activities are delivered asynchronously; read the job (GetJobAsync) for devices reached.")]
+    public int Ios { get; }
+
+    /// <summary>Always 0 now — delivery is asynchronous; read <see cref="LiveActivityJob.Android"/>.</summary>
+    [Obsolete("Live Activities are delivered asynchronously; read the job (GetJobAsync) for devices reached.")]
+    public int Android { get; }
+
+    /// <summary>Always 0 now — read <see cref="LiveActivityJob.Total"/>.</summary>
+    [Obsolete("Live Activities are delivered asynchronously; read the job (GetJobAsync) for devices reached.")]
+#pragma warning disable CS0618
+    public int Total => Ios + Android;
+#pragma warning restore CS0618
+
+    /// <summary>Always 0 now — read <see cref="LiveActivityJob.IosTargets"/>.</summary>
+    [Obsolete("Live Activities are delivered asynchronously; read the job (GetJobAsync).")]
+    public int IosTargets { get; }
+
+    /// <summary>Always null now — read <see cref="LiveActivityJob.IosWarning"/>.</summary>
+    [Obsolete("Live Activities are delivered asynchronously; read the job (GetJobAsync).")]
+    public string? IosWarning { get; }
+
+    internal static LiveActivityResult From(JsonNode? raw) => new LiveActivityResult(raw);
+}
+
+/// <summary>The outcome of a queued Live Activity start / update / end.</summary>
+public sealed class LiveActivityJob : NexusResult
+{
+    private LiveActivityJob(JsonNode? raw) : base(raw)
+    {
+        JobId = raw.Str("jobId");
+        ActivityId = raw.Str("activityId");
+        Kind = raw.Str("kind");
+        Status = raw.Str("status");
+        Attempts = raw.Int("attempts");
+        NextAttemptAt = raw.Timestamp("nextAttemptAt");
+        LastError = raw.Str("lastError");
+        Source = raw.Str("source");
+        CreatedAt = raw.Timestamp("createdAt");
+        CompletedAt = raw.Timestamp("completedAt");
+        var result = raw.Obj("result");
+        Ios = result.Int("ios");
+        Android = result.Int("android");
+        IosTargets = result.Int("iosTargets");
+        IosWarning = result.Str("iosWarning");
+    }
+
+    /// <summary>The job id.</summary>
+    public string? JobId { get; }
+
+    /// <summary>The activity the job is for.</summary>
+    public string? ActivityId { get; }
+
+    /// <summary><c>start</c>, <c>update</c> or <c>end</c>.</summary>
+    public string? Kind { get; }
+
+    /// <summary>
+    /// <c>pending</c> → <c>running</c> → <c>done</c>; <c>dead</c> once Nexus gave up
+    /// retrying; <c>superseded</c> for an update skipped because an end followed.
+    /// </summary>
+    public string? Status { get; }
+
+    /// <summary>Delivery attempts so far.</summary>
+    public int Attempts { get; }
+
+    /// <summary>When a pending job tries again; null otherwise.</summary>
+    public DateTimeOffset? NextAttemptAt { get; }
+
+    /// <summary>Why the last attempt didn't finish; null when all went well.</summary>
+    public string? LastError { get; }
+
+    /// <summary><c>api</c>, <c>console</c>, <c>auto-end</c> (no update in the auto-end window) or <c>late-end</c>.</summary>
+    public string? Source { get; }
+
+    /// <summary>When the job was accepted.</summary>
+    public DateTimeOffset? CreatedAt { get; }
+
+    /// <summary>When it finished; null until then.</summary>
+    public DateTimeOffset? CompletedAt { get; }
 
     /// <summary>iOS devices reached.</summary>
     public int Ios { get; }
@@ -250,13 +353,10 @@ public sealed class LiveActivityResult : NexusResult
     /// <summary>Start only: iOS devices registered for the activity type.</summary>
     public int IosTargets { get; }
 
-    /// <summary>
-    /// Start only: why iOS got fewer deliveries than targets — no registered
-    /// devices, APNs not configured, or Apple's rejection. Null when all is well.
-    /// </summary>
+    /// <summary>Start only: why iOS got fewer deliveries than targets. Null when all is well.</summary>
     public string? IosWarning { get; }
 
-    internal static LiveActivityResult From(JsonNode? raw) => new LiveActivityResult(raw);
+    internal static LiveActivityJob From(JsonNode? raw) => new LiveActivityJob(raw);
 }
 
 /// <summary>The stored survey response.</summary>

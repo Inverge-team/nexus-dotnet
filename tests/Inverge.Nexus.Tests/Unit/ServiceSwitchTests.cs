@@ -109,7 +109,7 @@ public class ServiceSwitchTests
         Assert.False(client.Options.Silent); // gating must not rely on silent mode
 
         var started = await client.LiveActivities.Template("order_tracking", "o1").Step("pending").ToUser("u").StartAsync();
-        Assert.Equal(0, started.Total);
+        Assert.False(started.Accepted); // switched off: nothing queued
         await client.LiveActivities.Activity("o1").Step("arrived").UpdateAsync();
         var push = await client.Push.Notification().Title("Hi").ToUser("u").SendAsync();
         Assert.NotNull(push);

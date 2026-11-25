@@ -4,6 +4,57 @@ All notable changes to the Nexus .NET SDK are documented here. The format follow
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0-rc.13] — 2026-11-23
+
+### Added — Messaging forwards your end user's IP
+- `Verifications.StartAsync` and sends with `MessageClass = "otp"` send the
+  request's client IP as `X-Client-IP`, for the per-IP rate limit. `UseNexus()`
+  binds `HttpContext.Connection.RemoteIpAddress` (put `UseForwardedHeaders()`
+  first behind a proxy); it flows into `Task.Run`. For queued jobs, carry
+  `NexusClientIp.Current` and wrap the work in `NexusClientIp.Use(ip)`.
+- `StartVerification.ClientIp` overrides it. `NexusClientIp.Enabled = false` or
+  `NEXUS_FORWARD_CLIENT_IP=false` turns it off. Private and proxy addresses are
+  never sent.
+
+## [1.0.0-rc.12] — 2026-11-22
+
+### Changed — Live Activities are delivered asynchronously
+- `StartAsync` / `UpdateAsync` / `EndAsync` (resource and builder) are accepted
+  at once (HTTP 202) and Nexus delivers them in the background — per-push
+  timeouts, retries, strict order per activity — so a call never waits on Apple
+  or Google and no longer times out when they're slow. `LiveActivityResult` now
+  carries `Accepted`, `JobId`, `ActivityId`, `Status`; its device counts
+  (`Ios`, `Android`, `IosTargets`, `IosWarning`, `Total`) are `[Obsolete]` and
+  always empty.
+
+### Added
+- `LiveActivities.GetJobAsync(jobId)` → `LiveActivityJob`: `Status`,
+  `Attempts`, `LastError`, and the devices reached (`Ios`, `Android`, `Total`,
+  `IosTargets`, `IosWarning`).
+
+### Fixed
+- A repeated start for an activity a user already has now updates it instead
+  of starting a second one, so retrying a start is safe.
+
+## [1.0.0-rc.11] — 2026-11-22
+
+### Added
+- **Billing suspension stops all calls.** After one `402 billing_suspended` a
+  client sends nothing for the pause the API asks for (`details.retryAfterSeconds`,
+  default 5 minutes): telemetry is dropped, other calls throw
+  `NexusBillingSuspendedException` with `IsLocal` (and `RetryAfter`) without a
+  request. When the pause ends one probe goes out; a refusal starts a new pause,
+  success resumes. `NexusClient.ResetBillingSuspension()` lifts it at once.
+- `NexusDeliveryFailure.Is(exception)`; `Errors.CaptureExceptionAsync` (and so
+  the ASP.NET Core middleware and the logger bridge) never reports the SDK's own
+  failure to reach Nexus.
+
+### Changed
+- Telemetry (`Events`, `Logs`, `Errors`, Telescope, replay) returns its neutral
+  value instead of throwing while suspended.
+- A `402 insufficient_balance` (empty Messaging wallet) is a plain
+  `NexusApiException`, no longer `NexusBillingSuspendedException`.
+
 ## [1.0.0-rc.9] — 2026-11-06
 
 ### Added

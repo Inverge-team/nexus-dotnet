@@ -189,7 +189,7 @@ public class BuilderTests
     public async Task The_live_activity_builder_starts_updates_and_ends()
     {
         var (client, transport) = TestClient.Create(
-            _ => RecordingTransport.Json(200, """{"ios":2,"android":1}"""));
+            _ => RecordingTransport.Json(202, """{"accepted":true,"jobId":"j1","activityId":"order_42","status":"pending"}"""));
         await using var _ = client;
 
         var started = await client.LiveActivities.Activity("DeliveryAttributes", "order_42")
@@ -200,7 +200,8 @@ public class BuilderTests
             .Priority(10)
             .StartAsync();
 
-        Assert.Equal(3, started.Total);
+        Assert.True(started.Accepted);
+        Assert.Equal("j1", started.JobId);
         var start = transport.Last.Object;
         Assert.Equal("/partner/live-activities/start", transport.Last.Path);
         Assert.Equal("DeliveryAttributes", start["activityType"]!.ToString());
@@ -226,10 +227,27 @@ public class BuilderTests
     }
 
     [Fact]
+    public async Task A_live_activity_job_reports_the_delivery_outcome()
+    {
+        var (client, transport) = TestClient.Create(
+            _ => RecordingTransport.Json(200, """{"jobId":"j1","activityId":"order_42","kind":"start","status":"done","attempts":2,"result":{"ios":1,"android":2,"iosTargets":1}}"""));
+        await using var _ = client;
+
+        var job = await client.LiveActivities.GetJobAsync("j1");
+
+        Assert.Equal("done", job.Status);
+        Assert.Equal(2, job.Attempts);
+        Assert.Equal(3, job.Total);
+        Assert.Equal(1, job.IosTargets);
+        Assert.Equal("GET", transport.Last.Method);
+        Assert.Equal("/partner/live-activities/jobs/j1", transport.Last.Path);
+    }
+
+    [Fact]
     public async Task A_templated_activity_starts_by_key_and_sends_only_data()
     {
         var (client, transport) = TestClient.Create(
-            _ => RecordingTransport.Json(200, """{"ios":1,"android":2,"iosTargets":1,"iosWarning":"x"}"""));
+            _ => RecordingTransport.Json(202, """{"accepted":true,"jobId":"j1","activityId":"order_42","status":"pending"}"""));
         await using var _ = client;
 
         var started = await client.LiveActivities.Template("order_tracking", "order_42")
@@ -242,8 +260,8 @@ public class BuilderTests
             .Alert("Order received", "500 L")
             .StartAsync();
 
-        Assert.Equal(1, started.IosTargets);
-        Assert.Equal("x", started.IosWarning);
+        Assert.True(started.Accepted); // queued — delivered asynchronously
+        Assert.Equal("j1", started.JobId);
         var body = transport.Last.Object;
         Assert.Equal("/partner/live-activities/start", transport.Last.Path);
         Assert.Equal("order_tracking", body["template"]!.ToString());

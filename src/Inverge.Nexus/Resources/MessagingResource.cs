@@ -53,7 +53,11 @@ public sealed class MessagingResource : NexusResource
     /// </summary>
     public async Task<MessageSendResult?> SendAsync(SendMessage message, CancellationToken cancellationToken = default)
     {
-        var request = Payloads.MessagingSend(Body(message), message.IdempotencyKey ?? NewIdempotencyKey());
+        var request = Payloads.MessagingSend(
+            Body(message),
+            message.IdempotencyKey ?? NewIdempotencyKey(),
+            // Only an OTP picks up the request's address by itself — see NexusClientIp.
+            message.MessageClass == "otp" ? NexusClientIp.Headers(message.ClientIp) : null);
         return await Client.ExecuteMessagingAsync(request, cancellationToken).ConfigureAwait(false) is JsonObject o
             ? new MessageSendResult(o)
             : null;
@@ -217,8 +221,10 @@ public sealed class VerificationsResource : NexusResource
             .Set("senderUsername", verification.SenderUsername)
             .Set("maxAttempts", verification.MaxAttempts)
             .SetNode("metadata", verification.Metadata is null ? null : JsonHelpers.ToObjectNode(verification.Metadata))
+            .Set("clientIp", verification.ClientIp)
             .Build();
-        return Read(await Client.ExecuteMessagingAsync(Payloads.VerificationStart(body), cancellationToken).ConfigureAwait(false));
+        var request = Payloads.VerificationStart(body, NexusClientIp.Headers(verification.ClientIp));
+        return Read(await Client.ExecuteMessagingAsync(request, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>Check what the user typed: <see cref="Verification.Valid"/> says whether it matched.</summary>

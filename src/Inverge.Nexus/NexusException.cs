@@ -210,14 +210,76 @@ public sealed class NexusValidationException : NexusApiException
 /// callbacks stay open. Retrying cannot help, so the SDK never does: catch this
 /// distinctly from an authentication failure and surface it to whoever can pay
 /// the bill.
+/// <para>
+/// After the first one the client stops calling the API for
+/// <see cref="RetryAfter"/>: further calls throw this at once with
+/// <see cref="IsLocal"/> set and send nothing (telemetry is dropped quietly).
+/// Access returns by itself once the invoice is settled.
+/// </para>
 /// </remarks>
 public sealed class NexusBillingSuspendedException : NexusApiException
 {
     /// <summary>Creates the exception.</summary>
     public NexusBillingSuspendedException(
         string message, int status, string? code, JsonNode? details, string? method, string? path, string? responseBody)
+        : this(message, status, code, details, method, path, responseBody, null, false)
+    {
+    }
+
+    /// <summary>Creates the exception, with the pause the client is holding.</summary>
+    public NexusBillingSuspendedException(
+        string message,
+        int status,
+        string? code,
+        JsonNode? details,
+        string? method,
+        string? path,
+        string? responseBody,
+        TimeSpan? retryAfter,
+        bool isLocal)
         : base(message, status, code, details, method, path, responseBody)
     {
+        RetryAfter = retryAfter;
+        IsLocal = isLocal;
+    }
+
+    /// <summary>How long the client pauses calls before checking again.</summary>
+    public TimeSpan? RetryAfter { get; }
+
+    /// <summary>True when refused by the SDK during a pause, without a request.</summary>
+    public bool IsLocal { get; }
+}
+
+/// <summary>Classifies failures the SDK must not report to Nexus Errors.</summary>
+public static class NexusDeliveryFailure
+{
+    /// <summary>
+    /// Whether <paramref name="exception"/> (or anything it wraps) is the SDK
+    /// failing to REACH Nexus — billing suspension, rate limiting, an outage, the
+    /// network. Reporting those to Nexus Errors would travel the same failing
+    /// path, fail, and be reported again. A 4xx the API answered for a bad
+    /// request (validation, not found…) is still the app's bug.
+    /// </summary>
+    public static bool Is(Exception? exception)
+    {
+        for (var depth = 0; exception is not null && depth < 10; depth++)
+        {
+            switch (exception)
+            {
+                case NexusBillingSuspendedException:
+                case NexusTransportException:
+                    return true;
+                case NexusApiException api when api.Status == 429 || api.Status >= 500:
+                    return true;
+                case AggregateException aggregate when aggregate.InnerExceptions.Count == 1:
+                    exception = aggregate.InnerExceptions[0];
+                    continue;
+            }
+
+            exception = exception.InnerException;
+        }
+
+        return false;
     }
 }
 
@@ -280,7 +342,9 @@ internal static class NexusApiExceptionFactory
         var details = error.Prop("details")?.DeepClone();
         var body = Truncate(rawBody);
 
-        if (status == 402 || string.Equals(code, "billing_suspended", StringComparison.Ordinal))
+        // Only the suspension code: Messaging answers 402 insufficient_balance
+        // for an empty prepaid wallet, which is not a suspension.
+        if (string.Equals(code, "billing_suspended", StringComparison.Ordinal) || (status == 402 && code is null))
         {
             return new NexusBillingSuspendedException(message!, status, code, details, method, path, body);
         }
